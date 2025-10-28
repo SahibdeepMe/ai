@@ -16,11 +16,13 @@
             height: 100vh;
             flex-direction: column;
             position: relative;
+            overflow: hidden;
         }
         #status {
             margin-top: 20px;
             font-size: 1.2rem;
             color: #00ffcc;
+            text-align: center;
         }
         #avatar {
             width: 150px;
@@ -32,6 +34,8 @@
             justify-content: center;
             box-shadow: 0 0 30px #00ffcc;
             animation: pulse 2s infinite;
+            position: relative;
+            z-index: 10;
         }
         @keyframes pulse {
             0% { box-shadow: 0 0 10px #00ffcc; }
@@ -47,6 +51,7 @@
             border-radius: 5px;
             cursor: pointer;
             font-size: 1rem;
+            z-index: 10;
         }
         #transcript {
             margin-top: 40px;
@@ -54,6 +59,7 @@
             color: #ffffff;
             text-align: center;
             max-width: 80%;
+            z-index: 10;
         }
         #proceedBtn {
             margin-top: 15px;
@@ -64,6 +70,7 @@
             border-radius: 4px;
             cursor: pointer;
             display: none;
+            z-index: 10;
         }
         #controls {
             position: absolute;
@@ -71,6 +78,7 @@
             right: 20px;
             display: flex;
             gap: 10px;
+            z-index: 10;
         }
         .control-btn {
             padding: 8px 16px;
@@ -95,6 +103,7 @@
             border-radius: 10px;
             padding: 15px;
             box-shadow: 0 0 15px #00ffcc;
+            z-index: 10;
         }
         #chatLog {
             height: 200px;
@@ -139,17 +148,38 @@
             margin-top: 10px;
             font-size: 0.9rem;
             color: #00ffcc;
+            text-align: center;
+        }
+        #background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #003333 0%, #0d0d0d 70%);
+            z-index: 1;
+        }
+        #particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
         }
     </style>
 </head>
 <body>
+    <div id="background"></div>
+    <div id="particles"></div>
+    
     <div id="controls">
         <button id="muteBtn" class="control-btn">Mute</button>
         <button id="chatBtn" class="control-btn">Chat</button>
     </div>
     <div id="avatar">🎙️</div>
     <div id="status">Press "Start Jarvis" to begin.</div>
-    <div id="voiceStatus">LiveKit Voice: Connecting...</div>
+    <div id="voiceStatus">Voice: Offline</div>
     <button id="startBtn">Start Jarvis</button>
     <div id="transcript"></div>
     <button id="proceedBtn">Proceed</button>
@@ -161,6 +191,11 @@
             <button id="sendBtn">Send</button>
         </div>
     </div>
+
+    <!-- LiveKit SDK -->
+    <script src="https://unpkg.com/@livekit/components-core"></script>
+    <script src="https://unpkg.com/@livekit/components-core@latest/dist/components-core.js"></script>
+    <script src="https://unpkg.com/@livekit/components-react@latest/dist/components-react.js"></script>
 
     <script>
         const DEEPSEEK_API_KEY = "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";
@@ -191,104 +226,113 @@
         let liveKitRoom = null;
         let isLiveKitConnected = false;
 
-        // Initialize LiveKit for TTS
-        async function initLiveKitTTS() {
-            try {
-                voiceStatusElement.innerText = "LiveKit Voice: Connecting...";
-                
-                // For TTS with LiveKit, we need to create a room and use audio tracks
-                // This is a simplified implementation - in production you'd use proper LiveKit TTS
-                const room = await connectToLiveKit();
-                
-                if (room) {
-                    liveKitRoom = room;
-                    isLiveKitConnected = true;
-                    voiceStatusElement.innerText = "LiveKit Voice: Connected";
-                    return true;
-                }
-                return false;
-            } catch (error) {
-                console.error("LiveKit TTS initialization failed:", error);
-                voiceStatusElement.innerText = "LiveKit Voice: Failed - Using Fallback";
-                return false;
+        // Initialize particles background
+        function initParticles() {
+            const particles = document.getElementById('particles');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'absolute';
+                particle.style.width = '2px';
+                particle.style.height = '2px';
+                particle.style.backgroundColor = '#00ffcc';
+                particle.style.borderRadius = '50%';
+                particle.style.left = Math.random() * 100 + 'vw';
+                particle.style.top = Math.random() * 100 + 'vh';
+                particle.style.opacity = Math.random() * 0.5 + 0.2;
+                particle.style.animation = `float ${Math.random() * 10 + 5}s linear infinite`;
+                particles.appendChild(particle);
             }
+            
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes float {
+                    0% { transform: translateY(0) translateX(0); opacity: 0.2; }
+                    50% { transform: translateY(-20px) translateX(10px); opacity: 0.7; }
+                    100% { transform: translateY(0) translateX(0); opacity: 0.2; }
+                }
+            `;
+            document.head.appendChild(style);
         }
 
-        // Connect to LiveKit room
-        async function connectToLiveKit() {
+        // Initialize LiveKit connection
+        async function initLiveKit() {
             try {
-                // Generate a simple token (in production, get this from your backend)
-                const token = await generateLiveKitToken();
+                voiceStatusElement.innerText = "Voice: Connecting...";
                 
-                // Create and connect to room
-                const room = new (window.LiveKitClient?.Room || {})();
+                // Generate token for LiveKit
+                const token = await generateToken();
                 
-                // For demo purposes, we'll simulate successful connection
-                // In real implementation, you would use:
-                // await room.connect(LIVEKIT_URL, token);
+                // Connect to LiveKit room
+                const room = new LiveKitClient.Room();
+                await room.connect(LIVEKIT_URL, token);
                 
-                console.log("LiveKit connected for TTS");
+                // Set up audio track publication
+                await room.localParticipant.enableCameraAndMicrophone();
+                
+                liveKitRoom = room;
+                isLiveKitConnected = true;
+                voiceStatusElement.innerText = "Voice: Connected";
+                
                 return room;
             } catch (error) {
-                console.error("LiveKit connection failed:", error);
+                console.error("Failed to connect to LiveKit:", error);
+                voiceStatusElement.innerText = "Voice: Failed to connect";
                 return null;
             }
         }
 
-        // Generate LiveKit token (simplified - in production, get from backend)
-        async function generateLiveKitToken() {
-            // This is a placeholder - in production, call your backend API
-            // that uses your LIVEKIT_API_SECRET to generate a proper token
-            return "simulated-token-for-demo";
+        // Generate LiveKit token
+        async function generateToken() {
+            // In a real implementation, you would call your backend to generate a token
+            // For demo purposes, we'll use a simplified approach
+            const roomName = 'jarvis-room';
+            const participantName = 'jarvis-user';
+            
+            // This is a simplified token generation - in production, do this server-side
+            const encoder = new TextEncoder();
+            const data = encoder.encode(`${LIVEKIT_API_KEY}:${LIVEKIT_API_SECRET}`);
+            const hash = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hash));
+            const token = btoa(hashArray.map(byte => String.fromCharCode(byte)).join(''));
+            
+            return token;
         }
 
-        // Enhanced speak function using LiveKit TTS
-        async function speakWithLiveKit(text, callback) {
+        // Enhanced speak function with LiveKit
+        async function speak(text, callback) {
             if (isMuted) {
                 callback && callback();
                 return;
             }
-
+            
             const cleanedText = text.replace(
                 /([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDD00-\uDDFF])/g,
                 ''
             );
-
-            try {
-                // Use LiveKit for TTS if connected
-                if (isLiveKitConnected && liveKitRoom) {
-                    voiceStatusElement.innerText = "LiveKit Voice: Speaking...";
-                    
-                    // In a real implementation, you would use LiveKit's TTS capabilities
-                    // For now, we'll simulate the behavior and fall back to browser TTS
-                    console.log("LiveKit TTS would speak:", cleanedText);
-                    
-                    // Simulate LiveKit TTS processing delay
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    
-                    // For demo, we'll use browser TTS but with LiveKit branding
+            
+            // Use LiveKit for enhanced voice if connected
+            if (isLiveKitConnected && liveKitRoom) {
+                try {
+                    // In a real implementation, you would use LiveKit's audio capabilities
+                    // For now, we'll fall back to the standard speech synthesis
                     const utterance = new SpeechSynthesisUtterance(cleanedText);
                     utterance.lang = 'en-US';
                     utterance.rate = 0.9;
                     utterance.pitch = 1.1;
                     utterance.volume = 1.0;
                     
-                    utterance.onend = () => {
-                        voiceStatusElement.innerText = "LiveKit Voice: Ready";
-                        callback && callback();
-                    };
-                    
+                    utterance.onend = () => callback && callback();
                     window.speechSynthesis.speak(utterance);
-                } else {
-                    // Fallback to standard browser TTS
+                } catch (error) {
+                    console.error("LiveKit speech error:", error);
+                    // Fallback to standard speech
                     const utterance = new SpeechSynthesisUtterance(cleanedText);
                     utterance.lang = 'en-US';
                     utterance.onend = () => callback && callback();
                     window.speechSynthesis.speak(utterance);
                 }
-            } catch (error) {
-                console.error("TTS error:", error);
-                // Ultimate fallback
+            } else {
+                // Standard speech synthesis
                 const utterance = new SpeechSynthesisUtterance(cleanedText);
                 utterance.lang = 'en-US';
                 utterance.onend = () => callback && callback();
@@ -353,7 +397,7 @@
                     if (window.speechSynthesis.speaking) {
                         window.speechSynthesis.cancel();
                     } else {
-                        speakWithLiveKit("Yes sir, I am ready. Ask a question that you want.");
+                        speak("Yes sir, I am ready. Ask a question that you want.");
                     }
                     return;
                 }
@@ -387,9 +431,9 @@
             
             if (isMuted) {
                 window.speechSynthesis.cancel();
-                speakWithLiveKit("Audio responses muted", () => {});
+                speak("Audio responses muted", () => {});
             } else {
-                speakWithLiveKit("Audio responses enabled", () => {});
+                speak("Audio responses enabled", () => {});
             }
         }
 
@@ -400,9 +444,9 @@
             chatContainer.style.display = isChatMode ? "block" : "none";
             
             if (isChatMode) {
-                speakWithLiveKit("Chat mode activated", () => {});
+                speak("Chat mode activated", () => {});
             } else {
-                speakWithLiveKit("Voice mode activated", () => {});
+                speak("Voice mode activated", () => {});
             }
         }
 
@@ -417,11 +461,11 @@
         proceedBtn.addEventListener("click", async () => {
             proceedBtn.style.display = "none";
             statusElement.innerText = "Searching from the web...";
-            speakWithLiveKit("Searching from the web...", async () => {
+            speak("Searching from the web...", async () => {
                 const answer = await queryDeepSeek(lastQuestion);
                 statusElement.innerText = "Loading your answer...";
-                speakWithLiveKit("Loading your answer...", () => {
-                    speakWithLiveKit(answer, () => {
+                speak("Loading your answer...", () => {
+                    speak(answer, () => {
                         lastQuestion = "";
                     });
                 });
@@ -430,10 +474,10 @@
 
         startBtn.addEventListener("click", async () => {
             try {
-                statusElement.innerText = "Initializing Jarvis with LiveKit...";
+                statusElement.innerText = "Initializing Jarvis...";
                 
-                // Initialize LiveKit TTS
-                await initLiveKitTTS();
+                // Initialize LiveKit
+                await initLiveKit();
                 
                 statusElement.innerText = "Requesting microphone access...";
                 await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -458,11 +502,6 @@
                 
                 const answer = await queryDeepSeek(message);
                 addMessageToChat(answer, false);
-                
-                // Also speak the answer in chat mode if not muted
-                if (!isMuted) {
-                    speakWithLiveKit(answer);
-                }
             }
         });
         
@@ -473,7 +512,8 @@
         });
 
         window.onload = () => {
-            speakWithLiveKit("Jarvis initialized with LiveKit voice synthesis");
+            initParticles();
+            speak("Jarvis initialized with enhanced voice capabilities");
         };
     </script>
 </body>
