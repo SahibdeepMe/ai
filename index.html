@@ -1,277 +1,562 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>YouTube (preview) & MEGA helper — client-side only</title>
-<style>
-  :root{--bg:#0f1114;--panel:#181818;--muted:#9aa6b2;--accent:#7c3aed;--text:#e6eef8;--card:#0b1220}
-  body{font-family:Inter,system-ui,Arial;margin:0;background:var(--bg);color:var(--text);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
-  .card{width:760px;max-width:100%;background:var(--panel);padding:20px;border-radius:12px;box-shadow:0 6px 30px rgba(0,0,0,.6)}
-  h1{margin:0 0 8px 0;color:var(--accent);font-size:20px}
-  p.small{color:var(--muted);margin:6px 0 18px 0;font-size:13px}
-  .row{display:flex;gap:10px;flex-wrap:wrap}
-  input,select,button,textarea{padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.04);background:var(--card);color:var(--text);outline:none}
-  input[type="text"]{flex:1;min-width:220px}
-  button{background:var(--accent);border:none;color:#fff;cursor:pointer}
-  button.secondary{background:transparent;border:1px solid rgba(255,255,255,.06)}
-  .meta{margin-top:12px;display:flex;gap:12px;align-items:flex-start}
-  .thumb{width:160px;height:90px;background:#000;border-radius:6px;overflow:hidden;flex-shrink:0}
-  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-  .info{flex:1}
-  .info h3{margin:0;font-size:16px}
-  .info p{margin:6px 0;color:var(--muted);font-size:13px}
-  .notice{margin-top:14px;padding:10px;border-radius:8px;background:linear-gradient(180deg, rgba(124,58,237,.06), rgba(124,58,237,.03));color:var(--muted);font-size:13px}
-  .links{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
-  .links a{padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.03);text-decoration:none;color:var(--text);font-size:13px}
-  pre{background:#07101a;padding:10px;border-radius:8px;color:#cfeffc;overflow:auto}
-</style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Sahib Deep Singh - Knowledge Hub</title>
+
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+
+    <!-- jsPDF + EmailJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+    <style>
+        :root{
+            --bg-dark: #0b0c10;
+            --card-bg: rgba(255,255,255,0.06);
+            --glass: rgba(255,255,255,0.04);
+            --glass-2: rgba(255,255,255,0.02);
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --accent: #f72585;
+            --muted: #aab0c6;
+            --glass-border: rgba(255,255,255,0.06);
+            --neon: 0 8px 40px rgba(67,97,238,0.12);
+            --neon-accent: 0 8px 40px rgba(247,37,133,0.10);
+            --shadow-strong: 0 12px 40px rgba(2,6,23,0.6);
+        }
+
+        *{box-sizing:border-box; margin:0; padding:0; font-family:'Poppins',sans-serif;}
+        html,body{height:100%;}
+        body{
+            background: radial-gradient(1200px 600px at 10% 10%, rgba(67,97,238,0.06), transparent),
+                        radial-gradient(900px 400px at 90% 90%, rgba(247,37,133,0.04), transparent),
+                        var(--bg-dark);
+            color:#e6eef8;
+            -webkit-font-smoothing:antialiased;
+            -moz-osx-font-smoothing:grayscale;
+            overflow-x:hidden;
+        }
+
+        .container{max-width:1200px; margin:0 auto; padding:0 20px;}
+
+        /* Header */
+        header{
+            position:sticky; top:0; z-index:1000;
+            background: linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            box-shadow: var(--shadow-strong);
+        }
+        .navbar{
+            display:flex; align-items:center; justify-content:space-between;
+            padding:18px 0;
+        }
+        .logo{display:flex; align-items:center; gap:12px; font-weight:800; font-family:'Montserrat',sans-serif; color:white;}
+        .logo i{font-size:1.6rem; color:var(--secondary); text-shadow: 0 6px 18px rgba(58,12,163,0.18);}
+        .nav-links{display:flex; gap:18px; list-style:none; align-items:center;}
+        .nav-links a{
+            color:#e6eef8; text-decoration:none; font-weight:600; padding:8px 12px; border-radius:10px;
+            transition: all .25s ease;
+        }
+        .nav-links a:hover{transform:translateY(-4px); box-shadow:var(--neon);}
+        .cta-button{
+            background: linear-gradient(135deg,var(--accent), #b5179e);
+            padding:10px 18px; border-radius:40px; color:white; text-decoration:none; font-weight:700;
+            box-shadow:var(--neon-accent);
+        }
+
+        /* Hero */
+        .hero{
+            padding:80px 0 40px; text-align:center; position:relative;
+        }
+        .hero h1{
+            font-size:3.4rem; line-height:1.02;
+            background: linear-gradient(90deg,var(--primary), var(--secondary));
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+            font-family:'Montserrat',sans-serif;
+            margin-bottom:12px;
+        }
+        .hero p{color:var(--muted); max-width:760px; margin:0 auto 24px; font-size:1.15rem;}
+
+        .hero .cta-row{display:flex; gap:12px; justify-content:center; margin-top:14px; flex-wrap:wrap;}
+        .btn-outline{
+            padding:10px 18px; border-radius:999px; border:1px solid rgba(255,255,255,0.06);
+            color:#e6eef8; text-decoration:none; font-weight:600; background:transparent;
+            transition:all .25s;
+        }
+        .btn-outline:hover{transform:translateY(-3px); box-shadow:var(--neon);}
+
+        /* Profile section (kept original layout, improved styling) */
+        .profile-section{
+            display:flex; align-items:center; justify-content:center; gap:40px; margin-top:40px; flex-wrap:wrap;
+        }
+        .profile-info{
+            max-width:700px; text-align:left; background:var(--card-bg); padding:34px; border-radius:18px;
+            box-shadow: 0 10px 40px rgba(2,6,23,0.6); border:1px solid var(--glass-border);
+            position:relative; overflow:hidden;
+        }
+        .profile-info:before{content:""; position:absolute; height:5px; left:0; top:0; width:100%; background:linear-gradient(90deg,var(--primary),var(--secondary)); border-radius:8px 8px 0 0;}
+        .profile-info h2{font-size:1.9rem; color:var(--primary); font-family:'Montserrat',sans-serif; margin-bottom:10px;}
+        .profile-info p{color:var(--muted); font-size:1rem;}
+
+        .stats{display:flex; gap:12px; margin-top:22px; flex-wrap:wrap;}
+        .stat-item{flex:1; min-width:150px; padding:18px; border-radius:12px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.02);}
+        .stat-value{font-size:1.8rem; color:var(--secondary); font-weight:800; font-family:'Montserrat',sans-serif;}
+        .stat-label{color:var(--muted); margin-top:6px; font-weight:600;}
+
+        /* Channels (kept cards but styled) */
+        .channels{padding:80px 0; background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);}
+        .section-title{ text-align:center; font-size:2.4rem; margin-bottom:12px; color:#eaf0ff; font-family:'Montserrat',sans-serif; position:relative;}
+        .section-sub{max-width:900px; margin:8px auto 32px; color:var(--muted); text-align:center;}
+        .channels-grid{display:grid; grid-template-columns: repeat(auto-fit,minmax(300px,1fr)); gap:22px;}
+
+        .channel-card{
+            background:var(--glass); padding:30px; border-radius:18px; text-align:center; position:relative; overflow:hidden;
+            border:1px solid rgba(255,255,255,0.03); transition:all .28s; box-shadow:var(--neon);
+        }
+        .channel-card:hover{transform:translateY(-10px); box-shadow: 0 20px 60px rgba(67,97,238,0.14);}
+        .channel-icon{font-size:3.2rem; margin-bottom:18px; background:linear-gradient(90deg,var(--primary),var(--secondary)); -webkit-background-clip:text; color:transparent;}
+        .channel-card h3{font-size:1.4rem; margin-bottom:10px; color:#eaf0ff; font-family:'Montserrat',sans-serif;}
+        .channel-link{display:inline-block; margin-top:10px; padding:10px 18px; border-radius:999px; text-decoration:none; background:linear-gradient(90deg,var(--primary),var(--secondary)); color:white; font-weight:700; box-shadow:var(--neon);}
+
+        /* Licensing Grid */
+        .licensing{padding:80px 0; background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(80,20,120,0.01));}
+        .licensing-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:22px;}
+        .license-card{background:var(--glass); padding:28px; border-radius:16px; border:1px solid rgba(255,255,255,0.03); text-align:center;}
+        .license-percentage{font-size:2.6rem; color:var(--accent); font-weight:800; margin:12px 0; font-family:'Montserrat',sans-serif;}
+        .license-features{list-style:none; text-align:left; padding-left:0; margin-top:18px;}
+        .license-features li{position:relative; padding-left:28px; margin-bottom:10px; color:var(--muted);}
+        .license-features li:before{content:"✓"; position:absolute; left:0; color:var(--primary); font-weight:800;}
+
+        /* How It Works */
+        .how-it-works{padding:80px 0; background:transparent;}
+        .steps{display:flex; gap:16px; justify-content:space-between; flex-wrap:wrap; margin-top:26px;}
+        .step{flex:1; min-width:220px; text-align:center; padding:16px;}
+        .step-number{width:70px; height:70px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; background:linear-gradient(90deg,var(--primary),var(--secondary)); color:white; font-weight:800; box-shadow:var(--neon);}
+
+        /* Contact / Collaboration (merged form) */
+        .contact{ padding:80px 0; position:relative; }
+        .contact .container-inner{ max-width:900px; margin:0 auto; display:grid; grid-template-columns: 1fr 420px; gap:28px; align-items:start; }
+        .contact-intro{ padding:28px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:18px; border:1px solid rgba(255,255,255,0.03);}
+        .contact-intro h2{font-size:2rem; color:var(--primary); font-family:'Montserrat',sans-serif;}
+        .contact-intro p{color:var(--muted); margin-top:10px;}
+
+        /* Form (right column) */
+        form#licenseForm{ background:var(--card-bg); padding:24px; border-radius:14px; border:1px solid rgba(255,255,255,0.03); }
+        label{display:block; color:var(--muted); font-weight:600; margin-top:12px;}
+        input, textarea, select{
+            width:100%; padding:12px; margin-top:8px; border-radius:10px; border:none; outline:none; font-size:1rem;
+            background:rgba(255,255,255,0.96); color:#222;
+        }
+        button[type="submit"], #downloadBtn{
+            margin-top:16px; width:100%; padding:12px 14px; border-radius:999px; border:none; cursor:pointer;
+            background:linear-gradient(90deg,var(--primary),var(--secondary)); color:white; font-weight:800; box-shadow:var(--neon);
+        }
+        #agreement{ display:none; margin-top:16px; padding:14px; background:#0f1724; border-left:4px solid var(--primary); color:var(--muted); white-space:pre-wrap; border-radius:8px; }
+
+        /* Footer */
+        footer{ background:#071022; color:#9fb0de; padding:36px 0; margin-top:20px; border-top:1px solid rgba(255,255,255,0.02); }
+        .footer-content{ display:flex; gap:18px; justify-content:space-between; flex-wrap:wrap; }
+        .footer-column{ min-width:200px; }
+        .footer-column h3{ color:var(--primary); font-family:'Montserrat',sans-serif; margin-bottom:12px; }
+        .social-link{ display:inline-flex; width:44px; height:44px; align-items:center; justify-content:center; border-radius:999px; background:rgba(255,255,255,0.03); margin-right:8px; color:#fff; text-decoration:none; }
+        .copyright{text-align:center; color:#7f8fae; margin-top:20px;}
+
+        /* Floating decorative icons (kept but subtle) */
+        .floating-icon{ position:absolute; font-size:28px; opacity:0.06; color:var(--primary); }
+        .floating-icon.f1{ top:6%; left:6%; transform:rotate(-20deg);}
+        .floating-icon.f2{ top:18%; right:8%; transform:rotate(12deg);}
+        .floating-icon.f3{ bottom:12%; left:6%; transform:rotate(10deg);}
+        .floating-icon.f4{ bottom:22%; right:6%; transform:rotate(-10deg);}
+
+        /* Animations / transitions */
+        .fade-in{ opacity:0; transform:translateY(20px); transition:opacity .6s ease, transform .6s ease; }
+        .fade-in.show{ opacity:1; transform:translateY(0); }
+
+        @media (max-width: 980px){
+            .contact .container-inner{ grid-template-columns:1fr; }
+            .container{ padding:0 18px; }
+            .hero h1{ font-size:2.4rem; }
+            .profile-info{ padding:22px; }
+        }
+    </style>
 </head>
 <body>
-  <div class="card" role="main">
-    <h1>YouTube preview + MEGA helper (client-side)</h1>
-    <p class="small">Paste a YouTube URL to preview/embed and show metadata. Paste a MEGA/share/direct file URL to open/download from MEGA. This page performs only client-side actions — it cannot (and will not) download copyrighted YouTube content for you.</p>
 
-    <div style="margin-bottom:12px" class="row">
-      <input id="inputUrl" type="text" placeholder="Paste YouTube / MEGA / direct file URL here..." />
-      <select id="mode">
-        <option value="auto">Auto-detect</option>
-        <option value="youtube">YouTube (preview only)</option>
-        <option value="mega">MEGA (open / download link)</option>
-        <option value="direct">Direct file URL</option>
-      </select>
-      <button id="goBtn">Process</button>
-    </div>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <nav class="navbar">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    Knowledge Hub
+                </div>
 
-    <div id="resultArea" style="margin-top:10px"></div>
-
-    <div class="notice" id="notice">
-      <strong>Important:</strong>
-      <ul style="margin:6px 0 0 18px">
-        <li>You cannot download copyrighted YouTube videos via pure HTML/JS in-browser. That violates YouTube Terms of Service. This page only lets you preview/embed and fetch public metadata.</li>
-        <li>If you own the video and want to download a backup, use YouTube Studio or authorized tools you run locally.</li>
-        <li>MEGA links open MEGA’s site where MEGA's UI handles downloads. If a link points to a direct file URL, your browser will download it when you click it.</li>
-      </ul>
-    </div>
-
-    <hr style="border:none;height:1px;background:rgba(255,255,255,.03);margin:16px 0">
-
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button id="exampleYt">Example YouTube</button>
-      <button id="exampleMega">Example MEGA</button>
-      <button id="exampleDirect">Example direct file</button>
-      <button id="clearBtn" class="secondary">Clear</button>
-    </div>
-
-    <div style="margin-top:14px;color:var(--muted);font-size:13px">
-      <strong>Notes:</strong> If metadata fetch fails it may be due to CORS or provider restrictions — that is a browser/network limitation, not a bug in this page.
-    </div>
-  </div>
-
-<script>
-(function(){
-  const input = document.getElementById('inputUrl');
-  const modeSel = document.getElementById('mode');
-  const goBtn = document.getElementById('goBtn');
-  const result = document.getElementById('resultArea');
-  const exampleYt = document.getElementById('exampleYt');
-  const exampleMega = document.getElementById('exampleMega');
-  const exampleDirect = document.getElementById('exampleDirect');
-  const clearBtn = document.getElementById('clearBtn');
-
-  exampleYt.addEventListener('click', ()=> {
-    input.value = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
-    modeSel.value = 'youtube';
-  });
-  exampleMega.addEventListener('click', ()=> {
-    input.value = 'https://mega.nz/file/EXAMPLE';
-    modeSel.value = 'mega';
-  });
-  exampleDirect.addEventListener('click', ()=> {
-    input.value = 'https://file-examples.com/wp-content/uploads/2017/10/file_example_JPG_100kB.jpg';
-    modeSel.value = 'direct';
-  });
-  clearBtn.addEventListener('click', ()=> {
-    input.value = '';
-    result.innerHTML = '';
-    modeSel.value = 'auto';
-  });
-
-  function extractYouTubeId(url){
-    try {
-      const u = new URL(url);
-      if(u.hostname.includes('youtu.be')) {
-        return u.pathname.slice(1);
-      }
-      if(u.hostname.includes('youtube.com')){
-        return new URLSearchParams(u.search).get('v');
-      }
-    } catch(e){ return null; }
-    return null;
-  }
-
-  async function fetchOEmbed(url){
-    // YouTube oEmbed: https://www.youtube.com/oembed?url={url}&format=json
-    const oembedUrl = 'https://www.youtube.com/oembed?url=' + encodeURIComponent(url) + '&format=json';
-    const resp = await fetch(oembedUrl);
-    if(!resp.ok) throw new Error('oEmbed fetch failed: ' + resp.status);
-    return resp.json();
-  }
-
-  goBtn.addEventListener('click', async ()=>{
-    const raw = input.value.trim();
-    if(!raw){ result.innerHTML = '<div style="color:tomato">Please paste a URL.</div>'; return; }
-    const chosen = modeSel.value;
-    result.innerHTML = ''; // clear
-
-    // Auto-detect if needed
-    let mode = chosen;
-    if(chosen === 'auto'){
-      if(raw.includes('youtube.com') || raw.includes('youtu.be')) mode = 'youtube';
-      else if(raw.includes('mega.nz')) mode = 'mega';
-      else mode = 'direct';
-    }
-
-    if(mode === 'youtube'){
-      const vid = extractYouTubeId(raw);
-      if(!vid){
-        result.innerHTML = '<div style="color:tomato">Could not extract YouTube video ID. Make sure the link is a standard YouTube URL.</div>';
-        return;
-      }
-
-      // Embed player
-      const embedUrl = 'https://www.youtube.com/embed/' + encodeURIComponent(vid);
-      const thumbUrl = 'https://i.ytimg.com/vi/' + encodeURIComponent(vid) + '/hqdefault.jpg';
-
-      const container = document.createElement('div');
-      container.className = 'meta';
-      container.innerHTML = `
-        <div class="thumb"><img src="${thumbUrl}" alt="thumbnail" /></div>
-        <div class="info">
-          <h3>Embedded YouTube player</h3>
-          <p class="small">Video ID: <code>${vid}</code></p>
-          <div class="links">
-            <a id="openYt" target="_blank" rel="noopener noreferrer" href="https://www.youtube.com/watch?v=${vid}">Open on YouTube</a>
-            <a id="embedOpen" target="_blank" rel="noopener noreferrer" href="${embedUrl}">Open embed</a>
-          </div>
-          <div id="oembedArea" style="margin-top:8px;color:var(--muted)"></div>
+                <ul class="nav-links">
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#channels">Channels</a></li>
+                    <li><a href="#licensing">Licensing</a></li>
+                    <li><a href="#how-it-works">How It Works</a></li>
+                    <!-- Start Collaboration will scroll to merged form below -->
+                    <li><a href="#contact" class="cta-button">Start Collaboration</a></li>
+                </ul>
+            </nav>
         </div>
-      `;
-      result.appendChild(container);
+    </header>
 
-      // Insert iframe player below
-      const iframe = document.createElement('iframe');
-      iframe.width = '720';
-      iframe.height = '405';
-      iframe.src = embedUrl;
-      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-      iframe.allowFullscreen = true;
-      iframe.style.marginTop = '12px';
-      iframe.style.width = '100%';
-      iframe.style.border = 'none';
-      result.appendChild(iframe);
+    <!-- Hero -->
+    <section class="hero" id="about">
+        <div class="container">
+            <h1>Welcome to My Knowledge Hub</h1>
+            <p>Empowering minds through quality educational content and fostering a community of lifelong learners.</p>
 
-      // Try to fetch oEmbed (may be blocked by CORS in some browsers)
-      const oembedArea = container.querySelector('#oembedArea');
-      oembedArea.textContent = 'Fetching metadata…';
-      try {
-        const data = await fetchOEmbed(raw);
-        oembedArea.innerHTML = `
-          <strong>${escapeHtml(data.title || '—')}</strong>
-          <p style="margin:6px 0;color:var(--muted)">${escapeHtml(data.author_name || '')}</p>
-          <div class="links">
-            <a href="${data.author_url || '#'}" target="_blank" rel="noopener noreferrer">Author page</a>
-            <a href="${data.thumbnail_url || thumbUrl}" target="_blank" rel="noopener noreferrer">Thumbnail</a>
-          </div>
-        `;
-      } catch(err){
-        oembedArea.innerHTML = '<div style="color:var(--muted)">Could not fetch oEmbed metadata (CORS or provider restriction). You can still use the embedded player or open on YouTube.</div>';
-        console.log('oEmbed fetch error', err);
-      }
+            <div class="hero cta-row" style="margin-top:18px;">
+                <a href="#channels" class="btn-outline">Explore Channels</a>
+                <a href="#contact" class="cta-button">Start Collaboration</a>
+            </div>
 
-      return;
-    }
+            <div class="profile-section fade-in" id="profile-block" style="margin-top:42px;">
+                <div class="profile-info">
+                    <h2>About Sahibdeep Singh</h2>
+                    <p>As an experienced educator and content creator, I'm dedicated to making quality education accessible to everyone. Through my YouTube and Telegram channels, I share knowledge that empowers individuals and communities.</p>
 
-    if(mode === 'mega'){
-      // Create open / download buttons
-      const wrap = document.createElement('div');
-      wrap.innerHTML = `
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <a id="megaOpen" target="_blank" rel="noopener noreferrer">Open MEGA link</a>
-          <a id="megaDirect" target="_blank" rel="noopener noreferrer">Open in new tab</a>
-          <button id="copyMega">Copy Link</button>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-value">106K+</div>
+                            <div class="stat-label">Total Subscribers</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">100%</div>
+                            <div class="stat-label">Quality Content</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">500+</div>
+                            <div class="stat-label">Videos Created</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div style="margin-top:8px;color:var(--muted)">If the link is a public MEGA share page, it will open MEGA's UI where you can download. If the link is a direct file URL, your browser will start the download when you click it.</div>
-      `;
-      result.appendChild(wrap);
 
-      const openA = wrap.querySelector('#megaOpen');
-      const directA = wrap.querySelector('#megaDirect');
-      const copyBtn = wrap.querySelector('#copyMega');
-      openA.href = raw;
-      openA.textContent = 'Open MEGA share';
-      directA.href = raw;
-      directA.textContent = 'Open link (new tab)';
-      copyBtn.addEventListener('click', ()=> navigator.clipboard.writeText(raw).then(()=> alert('Link copied')));
+        <!-- Decorative Icons -->
+        <i class="fas fa-book floating-icon f1"></i>
+        <i class="fas fa-lightbulb floating-icon f2"></i>
+        <i class="fas fa-chart-line floating-icon f3"></i>
+        <i class="fas fa-users floating-icon f4"></i>
+    </section>
 
-      return;
-    }
+    <!-- Channels Section -->
+    <section class="channels" id="channels">
+        <div class="container">
+            <h2 class="section-title">My Content Channels</h2>
+            <p class="section-sub">Join my growing community across various platforms for educational content, insights, and knowledge sharing.</p>
 
-    if(mode === 'direct'){
-      // Provide link and a small preview (if image/video)
-      const a = document.createElement('a');
-      a.href = raw;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.textContent = 'Open direct URL (click to open / download)';
-      a.style.display = 'inline-block';
-      a.style.marginTop = '6px';
-      a.style.padding = '8px 10px';
-      a.style.background = 'rgba(255,255,255,0.03)';
-      a.style.borderRadius = '8px';
-      result.appendChild(a);
+            <div class="channels-grid">
+                <div class="channel-card fade-in">
+                    <i class="fab fa-youtube channel-icon"></i>
+                    <h3>YouTube Channel</h3>
+                    <p>Explore my educational videos on various topics. Subscribe to stay updated with new content.</p>
+                    <a href="https://www.youtube.com/@SAHIBDEEP_YT" target="_blank" class="channel-link">Visit Channel</a>
+                </div>
 
-      // Suggest right-click save if needed
-      const hint = document.createElement('div');
-      hint.style.marginTop = '8px';
-      hint.style.color = 'var(--muted)';
-      hint.textContent = 'Tip: Right-click the link and choose "Save link as…" to save directly to your Downloads folder.';
-      result.appendChild(hint);
+                <div class="channel-card fade-in">
+                    <i class="fab fa-telegram channel-icon"></i>
+                    <h3>Telegram Channel</h3>
+                    <p>Get daily knowledge bites, resources, and updates directly on Telegram.</p>
+                    <a href="https://t.me/SAHIBDEEP_Channel" target="_blank" class="channel-link">Join Channel</a>
+                </div>
 
-      // Try to preview if image or video by extension
-      try {
-        const urlObj = new URL(raw);
-        const ext = urlObj.pathname.split('.').pop().toLowerCase();
-        if(['jpg','jpeg','png','gif','webp','bmp'].includes(ext)){
-          const img = document.createElement('img');
-          img.src = raw;
-          img.alt = 'preview';
-          img.style.maxWidth = '100%';
-          img.style.marginTop = '12px';
-          img.style.borderRadius = '8px';
-          result.appendChild(img);
-        } else if(['mp4','webm','ogg'].includes(ext)){
-          const v = document.createElement('video');
-          v.src = raw;
-          v.controls = true;
-          v.style.width = '100%';
-          v.style.marginTop = '12px';
-          v.style.borderRadius = '8px';
-          result.appendChild(v);
+                <div class="channel-card fade-in">
+                    <i class="fas fa-users channel-icon"></i>
+                    <h3>Join My Community</h3>
+                    <p>Become part of our growing community of learners and educators.</p>
+                    <a href="#contact" class="channel-link">Get Involved</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Licensing Section -->
+    <section class="licensing" id="licensing">
+        <div class="container">
+            <h2 class="section-title">Content Licensing & Collaboration</h2>
+            <p class="section-sub">Focused on collaboration and learning from India to the world level. I offer flexible licensing options for creators who want to use my content.</p>
+
+            <div class="licensing-grid">
+                <div class="license-card fade-in">
+                    <i class="fas fa-video license-icon" style="font-size:34px; background:linear-gradient(90deg,var(--primary),var(--secondary)); -webkit-background-clip:text; color:transparent;"></i>
+                    <h3>Video Content</h3>
+                    <div class="license-percentage">5-6%</div>
+                    <p>Equity share when using my full video content</p>
+                    <ul class="license-features">
+                        <li>Full video usage rights</li>
+                        <li>Monetization allowed</li>
+                        <li>No copyright strikes</li>
+                        <li>Content attribution</li>
+                        <li>High-quality educational content</li>
+                    </ul>
+                </div>
+
+                <div class="license-card fade-in">
+                    <i class="fas fa-music license-icon" style="font-size:34px; background:linear-gradient(90deg,var(--primary),var(--secondary)); -webkit-background-clip:text; color:transparent;"></i>
+                    <h3>Audio Content</h3>
+                    <div class="license-percentage">2-3%</div>
+                    <p>Equity share when using my audio content</p>
+                    <ul class="license-features">
+                        <li>Audio usage rights</li>
+                        <li>Background music</li>
+                        <li>Podcast integration</li>
+                        <li>No copyright strikes</li>
+                        <li>High-quality audio files</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <h2 class="section-title">How It Works</h2>
+            <div class="steps">
+                <div class="step fade-in">
+                    <div class="step-number">1</div>
+                    <h3>Learn the Process</h3>
+                    <p>Understand how content licensing works and the benefits for both parties.</p>
+                </div>
+
+                <div class="step fade-in">
+                    <div class="step-number">2</div>
+                    <h3>Promote Your Content</h3>
+                    <p>Share your work while using licensed content to enhance quality.</p>
+                </div>
+
+                <div class="step fade-in">
+                    <div class="step-number">3</div>
+                    <h3>Know More About Terms</h3>
+                    <p>Review the licensing agreement and understand the revenue sharing model.</p>
+                </div>
+
+                <div class="step fade-in">
+                    <div class="step-number">4</div>
+                    <h3>Assess Key Metrics</h3>
+                    <p>Track performance and ensure compliance with the licensing terms.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact + Collaboration (Merged Form) -->
+    <section class="contact" id="contact">
+        <div class="container">
+            <div class="container-inner">
+                <div class="contact-intro fade-in">
+                    <h2>Ready to Collaborate?</h2>
+                    <p>Get in touch to discuss content licensing, collaborations, or any questions about my educational resources. Fill the form to generate an agreement — you can download a PDF and it will be emailed to Sahibdeep automatically.</p>
+                    <p style="margin-top:12px; color:var(--muted);">By submitting you agree to receive an email notification. We will keep your information secure.</p>
+                </div>
+
+                <div>
+                    <form id="licenseForm" class="fade-in" autocomplete="off">
+                        <label>YouTube Video Link:</label>
+                        <input type="text" id="videoLink" required placeholder="https://youtube.com/..." />
+
+                        <label>What are you using?</label>
+                        <select id="usageType" required>
+                            <option value="">-- Select --</option>
+                            <option value="audio">Audio Only</option>
+                            <option value="video">Full Video</option>
+                        </select>
+
+                        <label>Description of Usage:</label>
+                        <textarea id="usageDetails" rows="4" required placeholder="e.g., Used 30 sec for background music..."></textarea>
+
+                        <label>👤 Contact Info (Phone or Email):</label>
+                        <input type="text" id="userContact" required placeholder="Your mobile or email... 'Use Country Code eg. +91 ' " />
+
+                        <button type="submit">Generate Agreement</button>
+                    </form>
+
+                    <div id="agreement">
+                        <div id="agreementContent"></div>
+                        <p style="margin-top:10px;"><strong>Signed by:</strong> Sahibdeep Singh (Digital Signature)</p>
+                    </div>
+
+                    <button id="downloadBtn" style="display:none;">Download PDF</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container footer-content">
+            <div class="footer-column">
+                <h3>Knowledge Hub</h3>
+                <p style="color:var(--muted)">Empowering minds through quality educational content and fostering a community of lifelong learners.</p>
+                <div style="margin-top:12px;">
+                    <a href="https://www.youtube.com/@SAHIBDEEP_YT" class="social-link" target="_blank"><i class="fab fa-youtube"></i></a>
+                    <a href="https://t.me/SAHIBDEEP_Channel" class="social-link" target="_blank"><i class="fab fa-telegram"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+
+            <div class="footer-column">
+                <h3>Quick Links</h3>
+                <ul style="list-style:none; padding-left:0; color:var(--muted)">
+                    <li style="margin-bottom:8px;"><a href="#about" style="color:var(--muted); text-decoration:none;">About</a></li>
+                    <li style="margin-bottom:8px;"><a href="#channels" style="color:var(--muted); text-decoration:none;">Content Channels</a></li>
+                    <li style="margin-bottom:8px;"><a href="#licensing" style="color:var(--muted); text-decoration:none;">Content Licensing</a></li>
+                    <li style="margin-bottom:8px;"><a href="#how-it-works" style="color:var(--muted); text-decoration:none;">How It Works</a></li>
+                    <li style="margin-bottom:8px;"><a href="#contact" style="color:var(--muted); text-decoration:none;">Contact Us</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-column">
+                <h3>Legal</h3>
+                <ul style="list-style:none; padding-left:0; color:var(--muted)">
+                    <li style="margin-bottom:8px;"><a href="#" style="color:var(--muted); text-decoration:none;">Privacy Policy</a></li>
+                    <li style="margin-bottom:8px;"><a href="#" style="color:var(--muted); text-decoration:none;">Terms of Service</a></li>
+                    <li style="margin-bottom:8px;"><a href="#" style="color:var(--muted); text-decoration:none;">Content Licensing Agreement</a></li>
+                    <li style="margin-bottom:8px;"><a href="#" style="color:var(--muted); text-decoration:none;">Copyright Information</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="container copyright">
+            &copy; 2025 Sahibdeep Singh - Knowledge Hub. All rights reserved.
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scroll for internal anchors
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                // allow normal behavior if it's "#" only
+                const targetId = this.getAttribute('href');
+                if(!targetId || targetId === '#') return;
+                const target = document.querySelector(targetId);
+                if(target){
+                    e.preventDefault();
+                    window.scrollTo({
+                        top: target.offsetTop - 70,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Intersection Observer for fade-in
+        const obsOptions = { threshold: 0.08, rootMargin: '0px 0px -40px 0px' };
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if(entry.isIntersecting) entry.target.classList.add('show');
+            });
+        }, obsOptions);
+
+        document.querySelectorAll('.fade-in').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Initialize EmailJS (keep your public key; you had Z4oqosPN... earlier)
+        try {
+            emailjs.init("Z4oqosPNq2j0x0lHa");
+        } catch (e) {
+            // ignore if emailjs library hasn't loaded
+            console.warn('EmailJS init issue', e);
         }
-      } catch(e){ /* ignore invalid URLs */ }
-      return;
-    }
 
-    result.innerHTML = '<div style="color:tomato">Unknown mode.</div>';
-  });
+        // Agreement generation + PDF + Email logic
+        const form = document.getElementById('licenseForm');
+        const agreementDiv = document.getElementById('agreement');
+        const agreementContent = document.getElementById('agreementContent');
+        const downloadBtn = document.getElementById('downloadBtn');
 
-  // small helper
-  function escapeHtml(s){
-    if(!s) return '';
-    return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  }
-})();
-</script>
+        let generatedContent = "";
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const link = document.getElementById('videoLink').value.trim();
+            const type = document.getElementById('usageType').value;
+            const desc = document.getElementById('usageDetails').value.trim();
+            const contact = document.getElementById('userContact').value.trim();
+            const percent = type === 'video' ? '5%' : '2%';
+            const usedText = type === 'video' ? 'video content' : 'audio content';
+
+            const content = `
+LICENSE AGREEMENT
+
+This certifies that Sahibdeep Singh (YouTube Channel Owner)
+grants permission to use his ${usedText} in the following video:
+
+➡️ ${link}
+
+Purpose: ${desc}
+
+User Contact: ${contact}
+
+TERMS:
+- ${percent} of video revenue must be shared with the licensor.
+- Credit must be given in the description.
+- Unauthorized use may result in copyright action.
+
+Date: ${new Date().toLocaleDateString()}
+Signed by: Sahibdeep Singh (Digital Signature)
+            `;
+
+            generatedContent = content;
+            agreementContent.textContent = content;
+            agreementDiv.style.display = 'block';
+            downloadBtn.style.display = 'inline-block';
+            downloadBtn.scrollIntoView({behavior:'smooth', block:'center'});
+        });
+
+        downloadBtn.addEventListener('click', async () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4', compress: true });
+
+            // Header
+            doc.setFontSize(18);
+            doc.setTextColor(20, 30, 70);
+            doc.text("YouTube License Agreement", 40, 60);
+
+            // Body (wrap)
+            doc.setFontSize(11);
+            doc.setTextColor(20,20,20);
+            const lines = doc.splitTextToSize(generatedContent, 500);
+            doc.text(lines, 40, 100);
+
+            // Save
+            const blob = doc.output("blob");
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "YouTube_License_Agreement.pdf";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            // Email via EmailJS - send the generated content (ensure your service/template IDs are correct)
+            const reader = new FileReader();
+            reader.onload = function () {
+                // prepare payload; adjust service/template IDs as needed
+                emailjs.send("service_um6a3fc", "template_6njm2tx", {
+                    to_email: "sahibdeep.official@icloud.com",
+                    message: `📝 New license agreement generated:\n\n${generatedContent}\n\n📞 Contact: ${document.getElementById('userContact').value}`,
+                }).then(() => {
+                    alert("✅ PDF downloaded and email sent!");
+                }).catch((error) => {
+                    alert("❌ Email failed: " + (error && error.text ? error.text : error));
+                });
+            };
+            reader.readAsDataURL(blob);
+        });
+    </script>
 </body>
 </html>
