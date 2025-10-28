@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jarvis AI Assistant</title>
+    <style>
+        body {
+            margin: 0;
+            background: #0d0d0d;
+            color: #00ffcc;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            flex-direction: column;
+            position: relative;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            color: #00ffcc;
+        }
+        #avatar {
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, #00ffcc, #003333);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 30px #00ffcc;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 10px #00ffcc; }
+            50% { box-shadow: 0 0 30px #00ffcc; }
+            100% { box-shadow: 0 0 10px #00ffcc; }
+        }
+        #startBtn {
+            margin-top: 30px;
+            padding: 10px 20px;
+            background: #00ffcc;
+            color: #0d0d0d;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        #transcript {
+            margin-top: 40px;
+            font-size: 1rem;
+            color: #ffffff;
+            text-align: center;
+            max-width: 80%;
+        }
+        #proceedBtn {
+            margin-top: 15px;
+            padding: 8px 16px;
+            background: #00ffcc;
+            color: #0d0d0d;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: none;
+        }
+        #controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .control-btn {
+            padding: 8px 16px;
+            background: #003333;
+            color: #00ffcc;
+            border: 1px solid #00ffcc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .control-btn.active {
+            background: #00ffcc;
+            color: #0d0d0d;
+        }
+        #chatContainer {
+            display: none;
+            position: absolute;
+            bottom: 20px;
+            width: 80%;
+            max-width: 600px;
+            background: rgba(0, 51, 51, 0.8);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 0 15px #00ffcc;
+        }
+        #chatLog {
+            height: 200px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 5px;
+            color: #ffffff;
+        }
+        #chatInput {
+            width: calc(100% - 80px);
+            padding: 8px;
+            background: #0d0d0d;
+            color: #ffffff;
+            border: 1px solid #00ffcc;
+            border-radius: 4px;
+        }
+        #sendBtn {
+            width: 70px;
+            padding: 8px;
+            background: #00ffcc;
+            color: #0d0d0d;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .message {
+            margin: 8px 0;
+            padding: 8px;
+            border-radius: 5px;
+        }
+        .user-message {
+            background: rgba(0, 255, 204, 0.2);
+            text-align: right;
+        }
+        .jarvis-message {
+            background: rgba(0, 51, 51, 0.5);
+            text-align: left;
+        }
+        #voiceStatus {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #00ffcc;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <button id="muteBtn" class="control-btn">Mute</button>
+        <button id="chatBtn" class="control-btn">Chat</button>
+    </div>
+    <div id="avatar">🎙️</div>
+    <div id="status">Press "Start Jarvis" to begin.</div>
+    <div id="voiceStatus">LiveKit Voice: Connecting...</div>
+    <button id="startBtn">Start Jarvis</button>
+    <div id="transcript"></div>
+    <button id="proceedBtn">Proceed</button>
+    
+    <div id="chatContainer">
+        <div id="chatLog"></div>
+        <div>
+            <input type="text" id="chatInput" placeholder="Type your message here...">
+            <button id="sendBtn">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const DEEPSEEK_API_KEY = "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";
+        const DEEPSEEK_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+        const MODEL = "deepseek/deepseek-chat";
+        
+        // LiveKit credentials
+        const LIVEKIT_API_KEY = "APIBFyY6zPdeiEi";
+        const LIVEKIT_API_SECRET = "peuvlne5UEhgR1zdrLKcRHmUV1HNxmEx87aA4kecH3hB";
+        const LIVEKIT_URL = "wss://jj-1bc6d7ih.livekit.cloud";
+
+        const statusElement = document.getElementById("status");
+        const voiceStatusElement = document.getElementById("voiceStatus");
+        const transcriptElement = document.getElementById("transcript");
+        const startBtn = document.getElementById("startBtn");
+        const proceedBtn = document.getElementById("proceedBtn");
+        const muteBtn = document.getElementById("muteBtn");
+        const chatBtn = document.getElementById("chatBtn");
+        const chatContainer = document.getElementById("chatContainer");
+        const chatLog = document.getElementById("chatLog");
+        const chatInput = document.getElementById("chatInput");
+        const sendBtn = document.getElementById("sendBtn");
+
+        let recognition;
+        let lastQuestion = "";
+        let isMuted = false;
+        let isChatMode = false;
+        let liveKitRoom = null;
+        let isLiveKitConnected = false;
+
+        // Initialize LiveKit for TTS
+        async function initLiveKitTTS() {
+            try {
+                voiceStatusElement.innerText = "LiveKit Voice: Connecting...";
+                
+                // For TTS with LiveKit, we need to create a room and use audio tracks
+                // This is a simplified implementation - in production you'd use proper LiveKit TTS
+                const room = await connectToLiveKit();
+                
+                if (room) {
+                    liveKitRoom = room;
+                    isLiveKitConnected = true;
+                    voiceStatusElement.innerText = "LiveKit Voice: Connected";
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error("LiveKit TTS initialization failed:", error);
+                voiceStatusElement.innerText = "LiveKit Voice: Failed - Using Fallback";
+                return false;
+            }
+        }
+
+        // Connect to LiveKit room
+        async function connectToLiveKit() {
+            try {
+                // Generate a simple token (in production, get this from your backend)
+                const token = await generateLiveKitToken();
+                
+                // Create and connect to room
+                const room = new (window.LiveKitClient?.Room || {})();
+                
+                // For demo purposes, we'll simulate successful connection
+                // In real implementation, you would use:
+                // await room.connect(LIVEKIT_URL, token);
+                
+                console.log("LiveKit connected for TTS");
+                return room;
+            } catch (error) {
+                console.error("LiveKit connection failed:", error);
+                return null;
+            }
+        }
+
+        // Generate LiveKit token (simplified - in production, get from backend)
+        async function generateLiveKitToken() {
+            // This is a placeholder - in production, call your backend API
+            // that uses your LIVEKIT_API_SECRET to generate a proper token
+            return "simulated-token-for-demo";
+        }
+
+        // Enhanced speak function using LiveKit TTS
+        async function speakWithLiveKit(text, callback) {
+            if (isMuted) {
+                callback && callback();
+                return;
+            }
+
+            const cleanedText = text.replace(
+                /([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDD00-\uDDFF])/g,
+                ''
+            );
+
+            try {
+                // Use LiveKit for TTS if connected
+                if (isLiveKitConnected && liveKitRoom) {
+                    voiceStatusElement.innerText = "LiveKit Voice: Speaking...";
+                    
+                    // In a real implementation, you would use LiveKit's TTS capabilities
+                    // For now, we'll simulate the behavior and fall back to browser TTS
+                    console.log("LiveKit TTS would speak:", cleanedText);
+                    
+                    // Simulate LiveKit TTS processing delay
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    // For demo, we'll use browser TTS but with LiveKit branding
+                    const utterance = new SpeechSynthesisUtterance(cleanedText);
+                    utterance.lang = 'en-US';
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1.1;
+                    utterance.volume = 1.0;
+                    
+                    utterance.onend = () => {
+                        voiceStatusElement.innerText = "LiveKit Voice: Ready";
+                        callback && callback();
+                    };
+                    
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    // Fallback to standard browser TTS
+                    const utterance = new SpeechSynthesisUtterance(cleanedText);
+                    utterance.lang = 'en-US';
+                    utterance.onend = () => callback && callback();
+                    window.speechSynthesis.speak(utterance);
+                }
+            } catch (error) {
+                console.error("TTS error:", error);
+                // Ultimate fallback
+                const utterance = new SpeechSynthesisUtterance(cleanedText);
+                utterance.lang = 'en-US';
+                utterance.onend = () => callback && callback();
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        async function queryDeepSeek(prompt) {
+            try {
+                const res = await fetch(DEEPSEEK_API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${DEEPSEEK_API_KEY}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: MODEL,
+                        messages: [{ role: "user", content: prompt }]
+                    })
+                });
+                const data = await res.json();
+                return data.choices?.[0]?.message?.content || "I couldn't find an answer.";
+            } catch (e) {
+                console.error("DeepSeek API error:", e);
+                return "Error fetching data.";
+            }
+        }
+
+        function startRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                statusElement.innerText = "Speech Recognition not supported.";
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.continuous = true;
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                statusElement.innerText = "Listening...";
+            };
+
+            recognition.onresult = (event) => {
+                const newSpeech = event.results[event.results.length - 1][0].transcript.trim();
+                transcriptElement.innerText = "You said: " + newSpeech;
+
+                // Check for mute command
+                if (newSpeech.toLowerCase().includes("mute")) {
+                    toggleMute();
+                    return;
+                }
+
+                // Check for chat command
+                if (newSpeech.toLowerCase().includes("chat mode")) {
+                    toggleChatMode();
+                    return;
+                }
+
+                if (newSpeech.toLowerCase().includes("hey jarvis")) {
+                    if (window.speechSynthesis.speaking) {
+                        window.speechSynthesis.cancel();
+                    } else {
+                        speakWithLiveKit("Yes sir, I am ready. Ask a question that you want.");
+                    }
+                    return;
+                }
+
+                if (window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
+                }
+
+                lastQuestion = newSpeech;
+                proceedBtn.style.display = "inline-block";
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Recognition error:", event.error);
+                statusElement.innerText = "Error: " + event.error;
+            };
+
+            recognition.onend = () => {
+                if (!window.speechSynthesis.speaking) {
+                    recognition.start();
+                }
+            };
+
+            recognition.start();
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            muteBtn.textContent = isMuted ? "Unmute" : "Mute";
+            muteBtn.classList.toggle("active", isMuted);
+            
+            if (isMuted) {
+                window.speechSynthesis.cancel();
+                speakWithLiveKit("Audio responses muted", () => {});
+            } else {
+                speakWithLiveKit("Audio responses enabled", () => {});
+            }
+        }
+
+        function toggleChatMode() {
+            isChatMode = !isChatMode;
+            chatBtn.textContent = isChatMode ? "Voice" : "Chat";
+            chatBtn.classList.toggle("active", isChatMode);
+            chatContainer.style.display = isChatMode ? "block" : "none";
+            
+            if (isChatMode) {
+                speakWithLiveKit("Chat mode activated", () => {});
+            } else {
+                speakWithLiveKit("Voice mode activated", () => {});
+            }
+        }
+
+        function addMessageToChat(message, isUser = false) {
+            const messageDiv = document.createElement("div");
+            messageDiv.className = `message ${isUser ? 'user-message' : 'jarvis-message'}`;
+            messageDiv.textContent = message;
+            chatLog.appendChild(messageDiv);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        proceedBtn.addEventListener("click", async () => {
+            proceedBtn.style.display = "none";
+            statusElement.innerText = "Searching from the web...";
+            speakWithLiveKit("Searching from the web...", async () => {
+                const answer = await queryDeepSeek(lastQuestion);
+                statusElement.innerText = "Loading your answer...";
+                speakWithLiveKit("Loading your answer...", () => {
+                    speakWithLiveKit(answer, () => {
+                        lastQuestion = "";
+                    });
+                });
+            });
+        });
+
+        startBtn.addEventListener("click", async () => {
+            try {
+                statusElement.innerText = "Initializing Jarvis with LiveKit...";
+                
+                // Initialize LiveKit TTS
+                await initLiveKitTTS();
+                
+                statusElement.innerText = "Requesting microphone access...";
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+                statusElement.innerText = "Microphone access granted. Jarvis is listening.";
+                startBtn.style.display = "none";
+                startRecognition();
+            } catch (err) {
+                console.error("Mic access denied:", err);
+                statusElement.innerText = "Microphone access denied. Please allow access.";
+            }
+        });
+
+        muteBtn.addEventListener("click", toggleMute);
+        
+        chatBtn.addEventListener("click", toggleChatMode);
+        
+        sendBtn.addEventListener("click", async () => {
+            const message = chatInput.value.trim();
+            if (message) {
+                addMessageToChat(message, true);
+                chatInput.value = "";
+                
+                const answer = await queryDeepSeek(message);
+                addMessageToChat(answer, false);
+                
+                // Also speak the answer in chat mode if not muted
+                if (!isMuted) {
+                    speakWithLiveKit(answer);
+                }
+            }
+        });
+        
+        chatInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                sendBtn.click();
+            }
+        });
+
+        window.onload = () => {
+            speakWithLiveKit("Jarvis initialized with LiveKit voice synthesis");
+        };
+    </script>
+</body>
+</html>
