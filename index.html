@@ -3,169 +3,263 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jarvis - DeepSeek AI Assistant</title>
+<title>Jarvis AI Assistant</title>
 <style>
-  body {
-    background-color: #0d1117;
-    color: #e6edf3;
-    font-family: "Segoe UI", sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    margin: 0;
-  }
-  .container {
-    text-align: center;
-    width: 90%;
-    max-width: 500px;
-    background: #161b22;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-  }
-  h1 {
-    color: #58a6ff;
-  }
-  #status {
-    margin: 12px 0;
-    color: #8b949e;
-  }
-  textarea {
-    width: 100%;
-    height: 80px;
-    border-radius: 8px;
-    border: none;
-    padding: 10px;
-    font-size: 16px;
-    background: #0d1117;
-    color: #e6edf3;
-    resize: none;
-  }
-  button {
-    margin: 10px;
-    padding: 10px 20px;
-    background: #238636;
-    border: none;
-    border-radius: 8px;
-    color: #fff;
-    font-size: 16px;
-    cursor: pointer;
-  }
-  button:hover {
-    background: #2ea043;
-  }
-  .secondary {
-    background: #30363d;
-  }
-  .secondary:hover {
-    background: #484f58;
-  }
-  #output {
-    margin-top: 20px;
-    background: #0d1117;
-    border-radius: 10px;
-    padding: 10px;
-    color: #e6edf3;
-    text-align: left;
-    min-height: 40px;
-  }
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        background: radial-gradient(circle at center, #001a1a 0%, #000000 100%);
+        color: #00fff6;
+        font-family: 'Orbitron', sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    #avatar {
+        width: 180px;
+        height: 180px;
+        background: radial-gradient(circle, #00fff6, #004d4d);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 40px #00fff6;
+        animation: pulse 2s infinite ease-in-out;
+        font-size: 3rem;
+        user-select: none;
+    }
+
+    @keyframes pulse {
+        0%, 100% { box-shadow: 0 0 20px #00fff6; }
+        50% { box-shadow: 0 0 50px #00fff6; transform: scale(1.05); }
+    }
+
+    #status {
+        margin-top: 25px;
+        font-size: 1.2rem;
+        text-shadow: 0 0 10px #00fff6;
+    }
+
+    #startBtn, #proceedBtn {
+        margin-top: 30px;
+        padding: 12px 28px;
+        background: #00fff6;
+        color: #001a1a;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: bold;
+        box-shadow: 0 0 15px #00fff6;
+        transition: 0.3s;
+    }
+
+    #startBtn:hover, #proceedBtn:hover {
+        background: #00cccc;
+        box-shadow: 0 0 30px #00fff6;
+    }
+
+    #transcript {
+        margin-top: 30px;
+        font-size: 1rem;
+        color: #ffffff;
+        text-align: center;
+        max-width: 80%;
+        line-height: 1.5;
+    }
+
+    #topControls {
+        position: absolute;
+        top: 15px;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        padding: 0 20px;
+    }
+
+    .control-btn {
+        background: transparent;
+        border: 2px solid #00fff6;
+        color: #00fff6;
+        padding: 8px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        text-shadow: 0 0 10px #00fff6;
+        transition: 0.3s;
+    }
+
+    .control-btn:hover {
+        background: #00fff6;
+        color: #001a1a;
+        box-shadow: 0 0 20px #00fff6;
+    }
+
 </style>
 </head>
 <body>
-<div class="container">
-  <h1>🎙️ Jarvis - DeepSeek AI</h1>
-  <div id="status">Ask me anything...</div>
-  <textarea id="userInput" placeholder="Type your question..."></textarea>
-  <div>
-    <button id="askBtn">Ask (Chat Mode)</button>
-    <button id="voiceBtn" class="secondary">🎤 Voice Mode</button>
-  </div>
-  <div id="output"></div>
-</div>
+    <div id="topControls">
+        <button id="chatToggle" class="control-btn">💬 Chat Mode: Off</button>
+        <button id="muteToggle" class="control-btn">🔇 Mute</button>
+    </div>
 
-<script>
-  // 🧠 DeepSeek Configuration
-  const DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions";
-  const DEEPSEEK_API_KEY = "your_deepseek_api_key_here"; // 🔑 Replace with your valid key
-  const MODEL = "deepseek-chat";
+    <div id="avatar">🎙️</div>
+    <div id="status">Press "Start Jarvis" to begin.</div>
+    <button id="startBtn">Start Jarvis</button>
+    <div id="transcript"></div>
+    <button id="proceedBtn">Proceed</button>
 
-  const userInput = document.getElementById("userInput");
-  const output = document.getElementById("output");
-  const statusEl = document.getElementById("status");
-  const askBtn = document.getElementById("askBtn");
-  const voiceBtn = document.getElementById("voiceBtn");
+    <script>
+        const DEEPSEEK_API_KEY = "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";
+        const DEEPSEEK_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+        const MODEL = "deepseek/deepseek-chat";
 
-  // 🎤 Speak Text
-  function speak(text) {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    speechSynthesis.speak(utterance);
-  }
+        const statusElement = document.getElementById("status");
+        const transcriptElement = document.getElementById("transcript");
+        const startBtn = document.getElementById("startBtn");
+        const proceedBtn = document.getElementById("proceedBtn");
+        const muteToggle = document.getElementById("muteToggle");
+        const chatToggle = document.getElementById("chatToggle");
 
-  // 🧩 Fetch Answer from DeepSeek
-  async function queryDeepSeek(prompt) {
-    try {
-      const res = await fetch(DEEPSEEK_API_URL, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${DEEPSEEK_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
+        let recognition;
+        let lastQuestion = "";
+        let isMuted = false;
+        let chatMode = false;
 
-      if (!res.ok) {
-        console.error("API error:", res.status, await res.text());
-        return "I'm having trouble reaching DeepSeek right now. Please try again later.";
-      }
+        function speak(text, callback) {
+            if (isMuted || chatMode) return callback && callback();
+            const cleanedText = text.replace(
+                /([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDD00-\uDDFF])/g,
+                ''
+            );
+            const utterance = new SpeechSynthesisUtterance(cleanedText);
+            utterance.lang = 'en-US';
+            utterance.onend = () => callback && callback();
+            window.speechSynthesis.speak(utterance);
+        }
 
-      const data = await res.json();
-      const answer = data?.choices?.[0]?.message?.content;
-      return answer?.trim() || "I couldn't find an answer.";
-    } catch (err) {
-      console.error("Fetch failed:", err);
-      return "An error occurred while fetching the answer.";
-    }
-  }
+        async function queryDeepSeek(prompt) {
+            try {
+                const res = await fetch(DEEPSEEK_API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${DEEPSEEK_API_KEY}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: MODEL,
+                        messages: [{ role: "user", content: prompt }]
+                    })
+                });
+                const data = await res.json();
+                return data.choices?.[0]?.message?.content || "I couldn't find an answer.";
+            } catch (e) {
+                console.error("DeepSeek API error:", e);
+                return "Error fetching data.";
+            }
+        }
 
-  // 💬 Handle Text Question
-  askBtn.addEventListener("click", async () => {
-    const question = userInput.value.trim();
-    if (!question) return;
-    statusEl.textContent = "Thinking...";
-    output.textContent = "";
-    const answer = await queryDeepSeek(question);
-    output.textContent = answer;
-    statusEl.textContent = "Answer ready!";
-  });
+        function startRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                statusElement.innerText = "Speech Recognition not supported.";
+                return;
+            }
 
-  // 🎙️ Handle Voice Mode
-  voiceBtn.addEventListener("click", () => {
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = "en-US";
-    recognition.start();
-    statusEl.textContent = "Listening... 🎧";
+            recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.continuous = true;
+            recognition.interimResults = false;
 
-    recognition.onresult = async (event) => {
-      const userSpeech = event.results[0][0].transcript;
-      userInput.value = userSpeech;
-      statusEl.textContent = "Processing your question...";
-      const answer = await queryDeepSeek(userSpeech);
-      output.textContent = answer;
-      statusEl.textContent = "Speaking...";
-      speak(answer);
-    };
+            recognition.onstart = () => {
+                if (!isMuted && !chatMode) statusElement.innerText = "Listening...";
+            };
 
-    recognition.onerror = () => {
-      statusEl.textContent = "Voice recognition error. Please try again.";
-    };
-  });
-</script>
+            recognition.onresult = (event) => {
+                if (isMuted || chatMode) return;
+                const newSpeech = event.results[event.results.length - 1][0].transcript.trim();
+                transcriptElement.innerText = "You said: " + newSpeech;
+
+                if (newSpeech.toLowerCase().includes("hey jarvis")) {
+                    if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+                    speak("Yes sir, I am ready. Ask your question.");
+                    return;
+                }
+
+                if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+                lastQuestion = newSpeech;
+                proceedBtn.style.display = "inline-block";
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Recognition error:", event.error);
+                statusElement.innerText = "Error: " + event.error;
+            };
+
+            recognition.onend = () => {
+                if (!isMuted && !chatMode) recognition.start();
+            };
+
+            recognition.start();
+        }
+
+        proceedBtn.addEventListener("click", async () => {
+            proceedBtn.style.display = "none";
+            statusElement.innerText = "Searching...";
+            if (!chatMode) speak("Searching from the web...", async () => {
+                const answer = await queryDeepSeek(lastQuestion);
+                statusElement.innerText = "Loading your answer...";
+                speak("Loading your answer...", () => {
+                    speak(answer, () => {
+                        transcriptElement.innerHTML = "<b>Jarvis:</b> " + answer;
+                        lastQuestion = "";
+                    });
+                });
+            });
+            else {
+                const answer = await queryDeepSeek(lastQuestion);
+                transcriptElement.innerHTML = "<b>Jarvis:</b> " + answer;
+                statusElement.innerText = "Answer ready.";
+            }
+        });
+
+        startBtn.addEventListener("click", async () => {
+            try {
+                statusElement.innerText = "Requesting microphone access...";
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+                statusElement.innerText = "Jarvis is listening.";
+                startBtn.style.display = "none";
+                if (!chatMode && !isMuted) startRecognition();
+            } catch (err) {
+                console.error("Mic access denied:", err);
+                statusElement.innerText = "Microphone access denied.";
+            }
+        });
+
+        muteToggle.addEventListener("click", () => {
+            isMuted = !isMuted;
+            muteToggle.textContent = isMuted ? "🔈 Unmute" : "🔇 Mute";
+            statusElement.innerText = isMuted ? "Jarvis muted and stopped listening." : "Jarvis active.";
+            if (isMuted && recognition) recognition.stop();
+            if (!isMuted && !chatMode) startRecognition();
+        });
+
+        chatToggle.addEventListener("click", () => {
+            chatMode = !chatMode;
+            chatToggle.textContent = chatMode ? "💬 Chat Mode: On" : "💬 Chat Mode: Off";
+            statusElement.innerText = chatMode ? "Chat mode activated (no voice)." : "Voice mode activated.";
+            if (chatMode && recognition) recognition.stop();
+            if (!chatMode && !isMuted) startRecognition();
+        });
+
+        window.onload = () => {
+            speak("Jarvis initialized and ready.");
+        };
+    </script>
 </body>
 </html>
