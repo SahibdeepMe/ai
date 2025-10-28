@@ -1,521 +1,358 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jarvis AI Assistant</title>
-    <style>
-        body {
-            margin: 0;
-            background: #0d0d0d;
-            color: #00ffcc;
-            font-family: 'Courier New', monospace;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            flex-direction: column;
-            position: relative;
-            overflow: hidden;
-        }
-        #status {
-            margin-top: 20px;
-            font-size: 1.2rem;
-            color: #00ffcc;
-            text-align: center;
-        }
-        #avatar {
-            width: 150px;
-            height: 150px;
-            background: radial-gradient(circle, #00ffcc, #003333);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 30px #00ffcc;
-            animation: pulse 2s infinite;
-            position: relative;
-            z-index: 10;
-        }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 10px #00ffcc; }
-            50% { box-shadow: 0 0 30px #00ffcc; }
-            100% { box-shadow: 0 0 10px #00ffcc; }
-        }
-        #startBtn {
-            margin-top: 30px;
-            padding: 10px 20px;
-            background: #00ffcc;
-            color: #0d0d0d;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-            z-index: 10;
-        }
-        #transcript {
-            margin-top: 40px;
-            font-size: 1rem;
-            color: #ffffff;
-            text-align: center;
-            max-width: 80%;
-            z-index: 10;
-        }
-        #proceedBtn {
-            margin-top: 15px;
-            padding: 8px 16px;
-            background: #00ffcc;
-            color: #0d0d0d;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            display: none;
-            z-index: 10;
-        }
-        #controls {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            display: flex;
-            gap: 10px;
-            z-index: 10;
-        }
-        .control-btn {
-            padding: 8px 16px;
-            background: #003333;
-            color: #00ffcc;
-            border: 1px solid #00ffcc;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-        .control-btn.active {
-            background: #00ffcc;
-            color: #0d0d0d;
-        }
-        #chatContainer {
-            display: none;
-            position: absolute;
-            bottom: 20px;
-            width: 80%;
-            max-width: 600px;
-            background: rgba(0, 51, 51, 0.8);
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: 0 0 15px #00ffcc;
-            z-index: 10;
-        }
-        #chatLog {
-            height: 200px;
-            overflow-y: auto;
-            margin-bottom: 10px;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 5px;
-            color: #ffffff;
-        }
-        #chatInput {
-            width: calc(100% - 80px);
-            padding: 8px;
-            background: #0d0d0d;
-            color: #ffffff;
-            border: 1px solid #00ffcc;
-            border-radius: 4px;
-        }
-        #sendBtn {
-            width: 70px;
-            padding: 8px;
-            background: #00ffcc;
-            color: #0d0d0d;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .message {
-            margin: 8px 0;
-            padding: 8px;
-            border-radius: 5px;
-        }
-        .user-message {
-            background: rgba(0, 255, 204, 0.2);
-            text-align: right;
-        }
-        .jarvis-message {
-            background: rgba(0, 51, 51, 0.5);
-            text-align: left;
-        }
-        #voiceStatus {
-            margin-top: 10px;
-            font-size: 0.9rem;
-            color: #00ffcc;
-            text-align: center;
-        }
-        #background {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at center, #003333 0%, #0d0d0d 70%);
-            z-index: 1;
-        }
-        #particles {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 2;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jarvis AI Assistant</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0d0d0d;
+      color: #00ffcc;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      color: #00ffcc;
+      text-align: center;
+    }
+    #avatar {
+      width: 150px;
+      height: 150px;
+      background: radial-gradient(circle, #00ffcc, #003333);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 30px #00ffcc;
+      animation: pulse 2s infinite;
+      position: relative;
+      z-index: 10;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 10px #00ffcc; }
+      50% { box-shadow: 0 0 30px #00ffcc; }
+      100% { box-shadow: 0 0 10px #00ffcc; }
+    }
+    #startBtn {
+      margin-top: 30px;
+      padding: 10px 20px;
+      background: #00ffcc;
+      color: #0d0d0d;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+      z-index: 10;
+    }
+    #transcript {
+      margin-top: 40px;
+      font-size: 1rem;
+      color: #ffffff;
+      text-align: center;
+      max-width: 80%;
+      z-index: 10;
+    }
+    #proceedBtn {
+      margin-top: 15px;
+      padding: 8px 16px;
+      background: #00ffcc;
+      color: #0d0d0d;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      display: none;
+      z-index: 10;
+    }
+    #controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+    }
+    .control-btn {
+      padding: 8px 16px;
+      background: #003333;
+      color: #00ffcc;
+      border: 1px solid #00ffcc;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .control-btn.active {
+      background: #00ffcc;
+      color: #0d0d0d;
+    }
+    #chatContainer {
+      display: none;
+      position: absolute;
+      bottom: 20px;
+      width: 80%;
+      max-width: 600px;
+      background: rgba(0, 51, 51, 0.8);
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 0 15px #00ffcc;
+      z-index: 10;
+    }
+    #chatLog {
+      height: 200px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 5px;
+      color: #ffffff;
+    }
+    #chatInput {
+      width: calc(100% - 80px);
+      padding: 8px;
+      background: #0d0d0d;
+      color: #ffffff;
+      border: 1px solid #00ffcc;
+      border-radius: 4px;
+    }
+    #sendBtn {
+      width: 70px;
+      padding: 8px;
+      background: #00ffcc;
+      color: #0d0d0d;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .message {
+      margin: 8px 0;
+      padding: 8px;
+      border-radius: 5px;
+    }
+    .user-message {
+      background: rgba(0, 255, 204, 0.2);
+      text-align: right;
+    }
+    .jarvis-message {
+      background: rgba(0, 51, 51, 0.5);
+      text-align: left;
+    }
+    #voiceStatus {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: #00ffcc;
+      text-align: center;
+    }
+    #background, #particles {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+    }
+    #background {
+      background: radial-gradient(circle at center, #003333 0%, #0d0d0d 70%);
+      z-index: 1;
+    }
+    #particles { z-index: 2; }
+  </style>
 </head>
 <body>
-    <div id="background"></div>
-    <div id="particles"></div>
-    
-    <div id="controls">
-        <button id="muteBtn" class="control-btn">Mute</button>
-        <button id="chatBtn" class="control-btn">Chat</button>
+  <div id="background"></div>
+  <div id="particles"></div>
+
+  <div id="controls">
+    <button id="muteBtn" class="control-btn">Mute</button>
+    <button id="chatBtn" class="control-btn">Chat</button>
+  </div>
+
+  <div id="avatar">🎙️</div>
+  <div id="status">Press "Start Jarvis" to begin.</div>
+  <div id="voiceStatus">Voice: Offline</div>
+  <button id="startBtn">Start Jarvis</button>
+  <div id="transcript"></div>
+  <button id="proceedBtn">Proceed</button>
+
+  <div id="chatContainer">
+    <div id="chatLog"></div>
+    <div>
+      <input type="text" id="chatInput" placeholder="Type your message here...">
+      <button id="sendBtn">Send</button>
     </div>
-    <div id="avatar">🎙️</div>
-    <div id="status">Press "Start Jarvis" to begin.</div>
-    <div id="voiceStatus">Voice: Offline</div>
-    <button id="startBtn">Start Jarvis</button>
-    <div id="transcript"></div>
-    <button id="proceedBtn">Proceed</button>
-    
-    <div id="chatContainer">
-        <div id="chatLog"></div>
-        <div>
-            <input type="text" id="chatInput" placeholder="Type your message here...">
-            <button id="sendBtn">Send</button>
-        </div>
-    </div>
+  </div>
 
-    <!-- LiveKit SDK -->
-    <script src="https://unpkg.com/@livekit/components-core"></script>
-    <script src="https://unpkg.com/@livekit/components-core@latest/dist/components-core.js"></script>
-    <script src="https://unpkg.com/@livekit/components-react@latest/dist/components-react.js"></script>
+  <script>
+    const DEEPSEEK_API_KEY = "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";
+    const DEEPSEEK_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+    const MODEL = "deepseek/deepseek-chat-v3.1:free";
 
-    <script>
-        const DEEPSEEK_API_KEY = "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";
-        const DEEPSEEK_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-        const MODEL = "deepseek/deepseek-chat-v3.1:free";
-        
-        // LiveKit credentials
-        const LIVEKIT_API_KEY = "APIBFyY6zPdeiEi";
-        const LIVEKIT_API_SECRET = "peuvlne5UEhgR1zdrLKcRHmUV1HNxmEx87aA4kecH3hB";
-        const LIVEKIT_URL = "wss://jj-1bc6d7ih.livekit.cloud";
+    const statusElement = document.getElementById("status");
+    const transcriptElement = document.getElementById("transcript");
+    const startBtn = document.getElementById("startBtn");
+    const proceedBtn = document.getElementById("proceedBtn");
+    const muteBtn = document.getElementById("muteBtn");
+    const chatBtn = document.getElementById("chatBtn");
+    const chatContainer = document.getElementById("chatContainer");
+    const chatLog = document.getElementById("chatLog");
+    const chatInput = document.getElementById("chatInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const voiceStatusElement = document.getElementById("voiceStatus");
 
-        const statusElement = document.getElementById("status");
-        const voiceStatusElement = document.getElementById("voiceStatus");
-        const transcriptElement = document.getElementById("transcript");
-        const startBtn = document.getElementById("startBtn");
-        const proceedBtn = document.getElementById("proceedBtn");
-        const muteBtn = document.getElementById("muteBtn");
-        const chatBtn = document.getElementById("chatBtn");
-        const chatContainer = document.getElementById("chatContainer");
-        const chatLog = document.getElementById("chatLog");
-        const chatInput = document.getElementById("chatInput");
-        const sendBtn = document.getElementById("sendBtn");
+    let recognition;
+    let lastQuestion = "";
+    let isMuted = false;
+    let isChatMode = false;
 
-        let recognition;
-        let lastQuestion = "";
-        let isMuted = false;
-        let isChatMode = false;
-        let liveKitRoom = null;
-        let isLiveKitConnected = false;
+    function speak(text, callback) {
+      if (isMuted) { callback && callback(); return; }
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.95;
+      utterance.pitch = 1.1;
+      utterance.onend = () => callback && callback();
+      speechSynthesis.speak(utterance);
+    }
 
-        // Initialize particles background
-        function initParticles() {
-            const particles = document.getElementById('particles');
-            for (let i = 0; i < 50; i++) {
-                const particle = document.createElement('div');
-                particle.style.position = 'absolute';
-                particle.style.width = '2px';
-                particle.style.height = '2px';
-                particle.style.backgroundColor = '#00ffcc';
-                particle.style.borderRadius = '50%';
-                particle.style.left = Math.random() * 100 + 'vw';
-                particle.style.top = Math.random() * 100 + 'vh';
-                particle.style.opacity = Math.random() * 0.5 + 0.2;
-                particle.style.animation = `float ${Math.random() * 10 + 5}s linear infinite`;
-                particles.appendChild(particle);
-            }
-            
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes float {
-                    0% { transform: translateY(0) translateX(0); opacity: 0.2; }
-                    50% { transform: translateY(-20px) translateX(10px); opacity: 0.7; }
-                    100% { transform: translateY(0) translateX(0); opacity: 0.2; }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-
-        // Initialize LiveKit connection
-        async function initLiveKit() {
-            try {
-                voiceStatusElement.innerText = "Voice: Connecting...";
-                
-                // Generate token for LiveKit
-                const token = await generateToken();
-                
-                // Connect to LiveKit room
-                const room = new LiveKitClient.Room();
-                await room.connect(LIVEKIT_URL, token);
-                
-                // Set up audio track publication
-                await room.localParticipant.enableCameraAndMicrophone();
-                
-                liveKitRoom = room;
-                isLiveKitConnected = true;
-                voiceStatusElement.innerText = "Voice: Connected";
-                
-                return room;
-            } catch (error) {
-                console.error("Failed to connect to LiveKit:", error);
-                voiceStatusElement.innerText = "Voice: Failed to connect";
-                return null;
-            }
-        }
-
-        // Generate LiveKit token
-        async function generateToken() {
-            // In a real implementation, you would call your backend to generate a token
-            // For demo purposes, we'll use a simplified approach
-            const roomName = 'jarvis-room';
-            const participantName = 'jarvis-user';
-            
-            // This is a simplified token generation - in production, do this server-side
-            const encoder = new TextEncoder();
-            const data = encoder.encode(`${LIVEKIT_API_KEY}:${LIVEKIT_API_SECRET}`);
-            const hash = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hash));
-            const token = btoa(hashArray.map(byte => String.fromCharCode(byte)).join(''));
-            
-            return token;
-        }
-
-        // Enhanced speak function with LiveKit
-        async function speak(text, callback) {
-            if (isMuted) {
-                callback && callback();
-                return;
-            }
-            
-            const cleanedText = text.replace(
-                /([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDD00-\uDDFF])/g,
-                ''
-            );
-            
-            // Use LiveKit for enhanced voice if connected
-            if (isLiveKitConnected && liveKitRoom) {
-                try {
-                    // In a real implementation, you would use LiveKit's audio capabilities
-                    // For now, we'll fall back to the standard speech synthesis
-                    const utterance = new SpeechSynthesisUtterance(cleanedText);
-                    utterance.lang = 'en-US';
-                    utterance.rate = 0.9;
-                    utterance.pitch = 1.1;
-                    utterance.volume = 1.0;
-                    
-                    utterance.onend = () => callback && callback();
-                    window.speechSynthesis.speak(utterance);
-                } catch (error) {
-                    console.error("LiveKit speech error:", error);
-                    // Fallback to standard speech
-                    const utterance = new SpeechSynthesisUtterance(cleanedText);
-                    utterance.lang = 'en-US';
-                    utterance.onend = () => callback && callback();
-                    window.speechSynthesis.speak(utterance);
-                }
-            } else {
-                // Standard speech synthesis
-                const utterance = new SpeechSynthesisUtterance(cleanedText);
-                utterance.lang = 'en-US';
-                utterance.onend = () => callback && callback();
-                window.speechSynthesis.speak(utterance);
-            }
-        }
-
-        async function queryDeepSeek(prompt) {
-            try {
-                const res = await fetch(DEEPSEEK_API_URL, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${DEEPSEEK_API_KEY}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        model: MODEL,
-                        messages: [{ role: "user", content: prompt }]
-                    })
-                });
-                const data = await res.json();
-                return data.choices?.[0]?.message?.content || "I couldn't find an answer.";
-            } catch (e) {
-                console.error("DeepSeek API error:", e);
-                return "Error fetching data.";
-            }
-        }
-
-        function startRecognition() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                statusElement.innerText = "Speech Recognition not supported.";
-                return;
-            }
-
-            recognition = new SpeechRecognition();
-            recognition.lang = 'en-US';
-            recognition.continuous = true;
-            recognition.interimResults = false;
-
-            recognition.onstart = () => {
-                statusElement.innerText = "Listening...";
-            };
-
-            recognition.onresult = (event) => {
-                const newSpeech = event.results[event.results.length - 1][0].transcript.trim();
-                transcriptElement.innerText = "You said: " + newSpeech;
-
-                // Check for mute command
-                if (newSpeech.toLowerCase().includes("mute")) {
-                    toggleMute();
-                    return;
-                }
-
-                // Check for chat command
-                if (newSpeech.toLowerCase().includes("chat mode")) {
-                    toggleChatMode();
-                    return;
-                }
-
-                if (newSpeech.toLowerCase().includes("hey jarvis")) {
-                    if (window.speechSynthesis.speaking) {
-                        window.speechSynthesis.cancel();
-                    } else {
-                        speak("Yes sir, I am ready. Ask a question that you want.");
-                    }
-                    return;
-                }
-
-                if (window.speechSynthesis.speaking) {
-                    window.speechSynthesis.cancel();
-                }
-
-                lastQuestion = newSpeech;
-                proceedBtn.style.display = "inline-block";
-            };
-
-            recognition.onerror = (event) => {
-                console.error("Recognition error:", event.error);
-                statusElement.innerText = "Error: " + event.error;
-            };
-
-            recognition.onend = () => {
-                if (!window.speechSynthesis.speaking) {
-                    recognition.start();
-                }
-            };
-
-            recognition.start();
-        }
-
-        function toggleMute() {
-            isMuted = !isMuted;
-            muteBtn.textContent = isMuted ? "Unmute" : "Mute";
-            muteBtn.classList.toggle("active", isMuted);
-            
-            if (isMuted) {
-                window.speechSynthesis.cancel();
-                speak("Audio responses muted", () => {});
-            } else {
-                speak("Audio responses enabled", () => {});
-            }
-        }
-
-        function toggleChatMode() {
-            isChatMode = !isChatMode;
-            chatBtn.textContent = isChatMode ? "Voice" : "Chat";
-            chatBtn.classList.toggle("active", isChatMode);
-            chatContainer.style.display = isChatMode ? "block" : "none";
-            
-            if (isChatMode) {
-                speak("Chat mode activated", () => {});
-            } else {
-                speak("Voice mode activated", () => {});
-            }
-        }
-
-        function addMessageToChat(message, isUser = false) {
-            const messageDiv = document.createElement("div");
-            messageDiv.className = `message ${isUser ? 'user-message' : 'jarvis-message'}`;
-            messageDiv.textContent = message;
-            chatLog.appendChild(messageDiv);
-            chatLog.scrollTop = chatLog.scrollHeight;
-        }
-
-        proceedBtn.addEventListener("click", async () => {
-            proceedBtn.style.display = "none";
-            statusElement.innerText = "Searching from the web...";
-            speak("Searching from the web...", async () => {
-                const answer = await queryDeepSeek(lastQuestion);
-                statusElement.innerText = "Loading your answer...";
-                speak("Loading your answer...", () => {
-                    speak(answer, () => {
-                        lastQuestion = "";
-                    });
-                });
-            });
+    async function queryDeepSeek(prompt) {
+      try {
+        const res = await fetch(DEEPSEEK_API_URL, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${DEEPSEEK_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: MODEL,
+            messages: [{ role: "user", content: prompt }]
+          })
         });
+        const data = await res.json();
+        let answer = data?.choices?.[0]?.message?.content?.trim();
 
-        startBtn.addEventListener("click", async () => {
-            try {
-                statusElement.innerText = "Initializing Jarvis...";
-                
-                // Initialize LiveKit
-                await initLiveKit();
-                
-                statusElement.innerText = "Requesting microphone access...";
-                await navigator.mediaDevices.getUserMedia({ audio: true });
-                statusElement.innerText = "Microphone access granted. Jarvis is listening.";
-                startBtn.style.display = "none";
-                startRecognition();
-            } catch (err) {
-                console.error("Mic access denied:", err);
-                statusElement.innerText = "Microphone access denied. Please allow access.";
-            }
-        });
+        if (!answer || answer === "" || answer.includes("I couldn't find an answer")) {
+          answer = "Let me try again... but I couldn’t find anything useful right now.";
+        }
+        return answer;
+      } catch (e) {
+        console.error("DeepSeek error:", e);
+        return "I’m facing some connection issues while searching for your answer.";
+      }
+    }
 
-        muteBtn.addEventListener("click", toggleMute);
-        
-        chatBtn.addEventListener("click", toggleChatMode);
-        
-        sendBtn.addEventListener("click", async () => {
-            const message = chatInput.value.trim();
-            if (message) {
-                addMessageToChat(message, true);
-                chatInput.value = "";
-                
-                const answer = await queryDeepSeek(message);
-                addMessageToChat(answer, false);
-            }
-        });
-        
-        chatInput.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") {
-                sendBtn.click();
-            }
-        });
+    function startRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        statusElement.innerText = "Speech Recognition not supported.";
+        return;
+      }
+      recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.continuous = true;
+      recognition.interimResults = false;
 
-        window.onload = () => {
-            initParticles();
-            speak("Jarvis initialized with enhanced voice capabilities");
-        };
-    </script>
+      recognition.onstart = () => statusElement.innerText = "Listening...";
+      recognition.onresult = (event) => {
+        const newSpeech = event.results[event.results.length - 1][0].transcript.trim();
+        transcriptElement.innerText = "You said: " + newSpeech;
+        lastQuestion = newSpeech;
+        proceedBtn.style.display = "inline-block";
+      };
+      recognition.onerror = (e) => statusElement.innerText = "Error: " + e.error;
+      recognition.onend = () => recognition.start();
+      recognition.start();
+    }
+
+    function addMessage(msg, isUser = false) {
+      const div = document.createElement("div");
+      div.className = `message ${isUser ? 'user-message' : 'jarvis-message'}`;
+      div.textContent = msg;
+      chatLog.appendChild(div);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    proceedBtn.addEventListener("click", async () => {
+      proceedBtn.style.display = "none";
+      statusElement.innerText = "Searching for your answer...";
+      speak("Searching from the web...", async () => {
+        const answer = await queryDeepSeek(lastQuestion);
+        statusElement.innerText = "Answer loaded.";
+        speak(answer);
+      });
+    });
+
+    startBtn.addEventListener("click", async () => {
+      try {
+        statusElement.innerText = "Requesting microphone access...";
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        voiceStatusElement.innerText = "Voice: Active";
+        startBtn.style.display = "none";
+        startRecognition();
+        statusElement.innerText = "Jarvis is listening.";
+      } catch {
+        statusElement.innerText = "Microphone access denied.";
+      }
+    });
+
+    muteBtn.addEventListener("click", () => {
+      isMuted = !isMuted;
+      muteBtn.textContent = isMuted ? "Unmute" : "Mute";
+      muteBtn.classList.toggle("active", isMuted);
+      speak(isMuted ? "Audio muted." : "Audio unmuted.");
+    });
+
+    chatBtn.addEventListener("click", () => {
+      isChatMode = !isChatMode;
+      chatBtn.textContent = isChatMode ? "Voice" : "Chat";
+      chatBtn.classList.toggle("active", isChatMode);
+      chatContainer.style.display = isChatMode ? "block" : "none";
+      speak(isChatMode ? "Chat mode activated." : "Voice mode activated.");
+    });
+
+    sendBtn.addEventListener("click", async () => {
+      const msg = chatInput.value.trim();
+      if (!msg) return;
+      addMessage(msg, true);
+      chatInput.value = "";
+      const ans = await queryDeepSeek(msg);
+      addMessage(ans, false);
+      speak(ans);
+    });
+
+    chatInput.addEventListener("keypress", e => {
+      if (e.key === "Enter") sendBtn.click();
+    });
+
+    window.onload = () => {
+      const particles = document.getElementById('particles');
+      for (let i = 0; i < 50; i++) {
+        const p = document.createElement('div');
+        p.style.position = 'absolute';
+        p.style.width = '2px';
+        p.style.height = '2px';
+        p.style.backgroundColor = '#00ffcc';
+        p.style.borderRadius = '50%';
+        p.style.left = Math.random() * 100 + 'vw';
+        p.style.top = Math.random() * 100 + 'vh';
+        p.style.opacity = Math.random() * 0.5 + 0.2;
+        p.style.animation = `float ${Math.random() * 10 + 5}s linear infinite`;
+        particles.appendChild(p);
+      }
+      const s = document.createElement('style');
+      s.textContent = `
+        @keyframes float {
+          0% { transform: translateY(0) translateX(0); opacity: 0.2; }
+          50% { transform: translateY(-20px) translateX(10px); opacity: 0.7; }
+          100% { transform: translateY(0) translateX(0); opacity: 0.2; }
+        }
+      `;
+      document.head.appendChild(s);
+      speak("Jarvis initialized and ready for your command.");
+    };
+  </script>
 </body>
 </html>
