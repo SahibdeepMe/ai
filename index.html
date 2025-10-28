@@ -1,265 +1,277 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jarvis AI Assistant</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>YouTube (preview) & MEGA helper — client-side only</title>
 <style>
-    * { box-sizing: border-box; }
-
-    body {
-        margin: 0;
-        background: radial-gradient(circle at center, #001a1a 0%, #000000 100%);
-        color: #00fff6;
-        font-family: 'Orbitron', sans-serif;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
-    #avatar {
-        width: 180px;
-        height: 180px;
-        background: radial-gradient(circle, #00fff6, #004d4d);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 0 40px #00fff6;
-        animation: pulse 2s infinite ease-in-out;
-        font-size: 3rem;
-        user-select: none;
-    }
-
-    @keyframes pulse {
-        0%, 100% { box-shadow: 0 0 20px #00fff6; }
-        50% { box-shadow: 0 0 50px #00fff6; transform: scale(1.05); }
-    }
-
-    #status {
-        margin-top: 25px;
-        font-size: 1.2rem;
-        text-shadow: 0 0 10px #00fff6;
-    }
-
-    #startBtn, #proceedBtn {
-        margin-top: 30px;
-        padding: 12px 28px;
-        background: #00fff6;
-        color: #001a1a;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 1rem;
-        font-weight: bold;
-        box-shadow: 0 0 15px #00fff6;
-        transition: 0.3s;
-    }
-
-    #startBtn:hover, #proceedBtn:hover {
-        background: #00cccc;
-        box-shadow: 0 0 30px #00fff6;
-    }
-
-    #transcript {
-        margin-top: 30px;
-        font-size: 1rem;
-        color: #ffffff;
-        text-align: center;
-        max-width: 80%;
-        line-height: 1.5;
-    }
-
-    #topControls {
-        position: absolute;
-        top: 15px;
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        padding: 0 20px;
-    }
-
-    .control-btn {
-        background: transparent;
-        border: 2px solid #00fff6;
-        color: #00fff6;
-        padding: 8px 14px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 0.9rem;
-        text-shadow: 0 0 10px #00fff6;
-        transition: 0.3s;
-    }
-
-    .control-btn:hover {
-        background: #00fff6;
-        color: #001a1a;
-        box-shadow: 0 0 20px #00fff6;
-    }
-
+  :root{--bg:#0f1114;--panel:#181818;--muted:#9aa6b2;--accent:#7c3aed;--text:#e6eef8;--card:#0b1220}
+  body{font-family:Inter,system-ui,Arial;margin:0;background:var(--bg);color:var(--text);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+  .card{width:760px;max-width:100%;background:var(--panel);padding:20px;border-radius:12px;box-shadow:0 6px 30px rgba(0,0,0,.6)}
+  h1{margin:0 0 8px 0;color:var(--accent);font-size:20px}
+  p.small{color:var(--muted);margin:6px 0 18px 0;font-size:13px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  input,select,button,textarea{padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.04);background:var(--card);color:var(--text);outline:none}
+  input[type="text"]{flex:1;min-width:220px}
+  button{background:var(--accent);border:none;color:#fff;cursor:pointer}
+  button.secondary{background:transparent;border:1px solid rgba(255,255,255,.06)}
+  .meta{margin-top:12px;display:flex;gap:12px;align-items:flex-start}
+  .thumb{width:160px;height:90px;background:#000;border-radius:6px;overflow:hidden;flex-shrink:0}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .info{flex:1}
+  .info h3{margin:0;font-size:16px}
+  .info p{margin:6px 0;color:var(--muted);font-size:13px}
+  .notice{margin-top:14px;padding:10px;border-radius:8px;background:linear-gradient(180deg, rgba(124,58,237,.06), rgba(124,58,237,.03));color:var(--muted);font-size:13px}
+  .links{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+  .links a{padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.03);text-decoration:none;color:var(--text);font-size:13px}
+  pre{background:#07101a;padding:10px;border-radius:8px;color:#cfeffc;overflow:auto}
 </style>
 </head>
 <body>
-    <div id="topControls">
-        <button id="chatToggle" class="control-btn">💬 Chat Mode: Off</button>
-        <button id="muteToggle" class="control-btn">🔇 Mute</button>
+  <div class="card" role="main">
+    <h1>YouTube preview + MEGA helper (client-side)</h1>
+    <p class="small">Paste a YouTube URL to preview/embed and show metadata. Paste a MEGA/share/direct file URL to open/download from MEGA. This page performs only client-side actions — it cannot (and will not) download copyrighted YouTube content for you.</p>
+
+    <div style="margin-bottom:12px" class="row">
+      <input id="inputUrl" type="text" placeholder="Paste YouTube / MEGA / direct file URL here..." />
+      <select id="mode">
+        <option value="auto">Auto-detect</option>
+        <option value="youtube">YouTube (preview only)</option>
+        <option value="mega">MEGA (open / download link)</option>
+        <option value="direct">Direct file URL</option>
+      </select>
+      <button id="goBtn">Process</button>
     </div>
 
-    <div id="avatar">🎙️</div>
-    <div id="status">Press "Start Jarvis" to begin.</div>
-    <button id="startBtn">Start Jarvis</button>
-    <div id="transcript"></div>
-    <button id="proceedBtn">Proceed</button>
+    <div id="resultArea" style="margin-top:10px"></div>
 
-    <script>
-        const DEEPSEEK_API_KEY = "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";
-        const DEEPSEEK_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-        const MODEL = "deepseek/deepseek-chat";
+    <div class="notice" id="notice">
+      <strong>Important:</strong>
+      <ul style="margin:6px 0 0 18px">
+        <li>You cannot download copyrighted YouTube videos via pure HTML/JS in-browser. That violates YouTube Terms of Service. This page only lets you preview/embed and fetch public metadata.</li>
+        <li>If you own the video and want to download a backup, use YouTube Studio or authorized tools you run locally.</li>
+        <li>MEGA links open MEGA’s site where MEGA's UI handles downloads. If a link points to a direct file URL, your browser will download it when you click it.</li>
+      </ul>
+    </div>
 
-        const statusElement = document.getElementById("status");
-        const transcriptElement = document.getElementById("transcript");
-        const startBtn = document.getElementById("startBtn");
-        const proceedBtn = document.getElementById("proceedBtn");
-        const muteToggle = document.getElementById("muteToggle");
-        const chatToggle = document.getElementById("chatToggle");
+    <hr style="border:none;height:1px;background:rgba(255,255,255,.03);margin:16px 0">
 
-        let recognition;
-        let lastQuestion = "";
-        let isMuted = false;
-        let chatMode = false;
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button id="exampleYt">Example YouTube</button>
+      <button id="exampleMega">Example MEGA</button>
+      <button id="exampleDirect">Example direct file</button>
+      <button id="clearBtn" class="secondary">Clear</button>
+    </div>
 
-        function speak(text, callback) {
-            if (isMuted || chatMode) return callback && callback();
-            const cleanedText = text.replace(
-                /([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDD00-\uDDFF])/g,
-                ''
-            );
-            const utterance = new SpeechSynthesisUtterance(cleanedText);
-            utterance.lang = 'en-US';
-            utterance.onend = () => callback && callback();
-            window.speechSynthesis.speak(utterance);
+    <div style="margin-top:14px;color:var(--muted);font-size:13px">
+      <strong>Notes:</strong> If metadata fetch fails it may be due to CORS or provider restrictions — that is a browser/network limitation, not a bug in this page.
+    </div>
+  </div>
+
+<script>
+(function(){
+  const input = document.getElementById('inputUrl');
+  const modeSel = document.getElementById('mode');
+  const goBtn = document.getElementById('goBtn');
+  const result = document.getElementById('resultArea');
+  const exampleYt = document.getElementById('exampleYt');
+  const exampleMega = document.getElementById('exampleMega');
+  const exampleDirect = document.getElementById('exampleDirect');
+  const clearBtn = document.getElementById('clearBtn');
+
+  exampleYt.addEventListener('click', ()=> {
+    input.value = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+    modeSel.value = 'youtube';
+  });
+  exampleMega.addEventListener('click', ()=> {
+    input.value = 'https://mega.nz/file/EXAMPLE';
+    modeSel.value = 'mega';
+  });
+  exampleDirect.addEventListener('click', ()=> {
+    input.value = 'https://file-examples.com/wp-content/uploads/2017/10/file_example_JPG_100kB.jpg';
+    modeSel.value = 'direct';
+  });
+  clearBtn.addEventListener('click', ()=> {
+    input.value = '';
+    result.innerHTML = '';
+    modeSel.value = 'auto';
+  });
+
+  function extractYouTubeId(url){
+    try {
+      const u = new URL(url);
+      if(u.hostname.includes('youtu.be')) {
+        return u.pathname.slice(1);
+      }
+      if(u.hostname.includes('youtube.com')){
+        return new URLSearchParams(u.search).get('v');
+      }
+    } catch(e){ return null; }
+    return null;
+  }
+
+  async function fetchOEmbed(url){
+    // YouTube oEmbed: https://www.youtube.com/oembed?url={url}&format=json
+    const oembedUrl = 'https://www.youtube.com/oembed?url=' + encodeURIComponent(url) + '&format=json';
+    const resp = await fetch(oembedUrl);
+    if(!resp.ok) throw new Error('oEmbed fetch failed: ' + resp.status);
+    return resp.json();
+  }
+
+  goBtn.addEventListener('click', async ()=>{
+    const raw = input.value.trim();
+    if(!raw){ result.innerHTML = '<div style="color:tomato">Please paste a URL.</div>'; return; }
+    const chosen = modeSel.value;
+    result.innerHTML = ''; // clear
+
+    // Auto-detect if needed
+    let mode = chosen;
+    if(chosen === 'auto'){
+      if(raw.includes('youtube.com') || raw.includes('youtu.be')) mode = 'youtube';
+      else if(raw.includes('mega.nz')) mode = 'mega';
+      else mode = 'direct';
+    }
+
+    if(mode === 'youtube'){
+      const vid = extractYouTubeId(raw);
+      if(!vid){
+        result.innerHTML = '<div style="color:tomato">Could not extract YouTube video ID. Make sure the link is a standard YouTube URL.</div>';
+        return;
+      }
+
+      // Embed player
+      const embedUrl = 'https://www.youtube.com/embed/' + encodeURIComponent(vid);
+      const thumbUrl = 'https://i.ytimg.com/vi/' + encodeURIComponent(vid) + '/hqdefault.jpg';
+
+      const container = document.createElement('div');
+      container.className = 'meta';
+      container.innerHTML = `
+        <div class="thumb"><img src="${thumbUrl}" alt="thumbnail" /></div>
+        <div class="info">
+          <h3>Embedded YouTube player</h3>
+          <p class="small">Video ID: <code>${vid}</code></p>
+          <div class="links">
+            <a id="openYt" target="_blank" rel="noopener noreferrer" href="https://www.youtube.com/watch?v=${vid}">Open on YouTube</a>
+            <a id="embedOpen" target="_blank" rel="noopener noreferrer" href="${embedUrl}">Open embed</a>
+          </div>
+          <div id="oembedArea" style="margin-top:8px;color:var(--muted)"></div>
+        </div>
+      `;
+      result.appendChild(container);
+
+      // Insert iframe player below
+      const iframe = document.createElement('iframe');
+      iframe.width = '720';
+      iframe.height = '405';
+      iframe.src = embedUrl;
+      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+      iframe.allowFullscreen = true;
+      iframe.style.marginTop = '12px';
+      iframe.style.width = '100%';
+      iframe.style.border = 'none';
+      result.appendChild(iframe);
+
+      // Try to fetch oEmbed (may be blocked by CORS in some browsers)
+      const oembedArea = container.querySelector('#oembedArea');
+      oembedArea.textContent = 'Fetching metadata…';
+      try {
+        const data = await fetchOEmbed(raw);
+        oembedArea.innerHTML = `
+          <strong>${escapeHtml(data.title || '—')}</strong>
+          <p style="margin:6px 0;color:var(--muted)">${escapeHtml(data.author_name || '')}</p>
+          <div class="links">
+            <a href="${data.author_url || '#'}" target="_blank" rel="noopener noreferrer">Author page</a>
+            <a href="${data.thumbnail_url || thumbUrl}" target="_blank" rel="noopener noreferrer">Thumbnail</a>
+          </div>
+        `;
+      } catch(err){
+        oembedArea.innerHTML = '<div style="color:var(--muted)">Could not fetch oEmbed metadata (CORS or provider restriction). You can still use the embedded player or open on YouTube.</div>';
+        console.log('oEmbed fetch error', err);
+      }
+
+      return;
+    }
+
+    if(mode === 'mega'){
+      // Create open / download buttons
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <a id="megaOpen" target="_blank" rel="noopener noreferrer">Open MEGA link</a>
+          <a id="megaDirect" target="_blank" rel="noopener noreferrer">Open in new tab</a>
+          <button id="copyMega">Copy Link</button>
+        </div>
+        <div style="margin-top:8px;color:var(--muted)">If the link is a public MEGA share page, it will open MEGA's UI where you can download. If the link is a direct file URL, your browser will start the download when you click it.</div>
+      `;
+      result.appendChild(wrap);
+
+      const openA = wrap.querySelector('#megaOpen');
+      const directA = wrap.querySelector('#megaDirect');
+      const copyBtn = wrap.querySelector('#copyMega');
+      openA.href = raw;
+      openA.textContent = 'Open MEGA share';
+      directA.href = raw;
+      directA.textContent = 'Open link (new tab)';
+      copyBtn.addEventListener('click', ()=> navigator.clipboard.writeText(raw).then(()=> alert('Link copied')));
+
+      return;
+    }
+
+    if(mode === 'direct'){
+      // Provide link and a small preview (if image/video)
+      const a = document.createElement('a');
+      a.href = raw;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = 'Open direct URL (click to open / download)';
+      a.style.display = 'inline-block';
+      a.style.marginTop = '6px';
+      a.style.padding = '8px 10px';
+      a.style.background = 'rgba(255,255,255,0.03)';
+      a.style.borderRadius = '8px';
+      result.appendChild(a);
+
+      // Suggest right-click save if needed
+      const hint = document.createElement('div');
+      hint.style.marginTop = '8px';
+      hint.style.color = 'var(--muted)';
+      hint.textContent = 'Tip: Right-click the link and choose "Save link as…" to save directly to your Downloads folder.';
+      result.appendChild(hint);
+
+      // Try to preview if image or video by extension
+      try {
+        const urlObj = new URL(raw);
+        const ext = urlObj.pathname.split('.').pop().toLowerCase();
+        if(['jpg','jpeg','png','gif','webp','bmp'].includes(ext)){
+          const img = document.createElement('img');
+          img.src = raw;
+          img.alt = 'preview';
+          img.style.maxWidth = '100%';
+          img.style.marginTop = '12px';
+          img.style.borderRadius = '8px';
+          result.appendChild(img);
+        } else if(['mp4','webm','ogg'].includes(ext)){
+          const v = document.createElement('video');
+          v.src = raw;
+          v.controls = true;
+          v.style.width = '100%';
+          v.style.marginTop = '12px';
+          v.style.borderRadius = '8px';
+          result.appendChild(v);
         }
+      } catch(e){ /* ignore invalid URLs */ }
+      return;
+    }
 
-        async function queryDeepSeek(prompt) {
-            try {
-                const res = await fetch(DEEPSEEK_API_URL, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${DEEPSEEK_API_KEY}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        model: MODEL,
-                        messages: [{ role: "user", content: prompt }]
-                    })
-                });
-                const data = await res.json();
-                return data.choices?.[0]?.message?.content || "I couldn't find an answer.";
-            } catch (e) {
-                console.error("DeepSeek API error:", e);
-                return "Error fetching data.";
-            }
-        }
+    result.innerHTML = '<div style="color:tomato">Unknown mode.</div>';
+  });
 
-        function startRecognition() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                statusElement.innerText = "Speech Recognition not supported.";
-                return;
-            }
-
-            recognition = new SpeechRecognition();
-            recognition.lang = 'en-US';
-            recognition.continuous = true;
-            recognition.interimResults = false;
-
-            recognition.onstart = () => {
-                if (!isMuted && !chatMode) statusElement.innerText = "Listening...";
-            };
-
-            recognition.onresult = (event) => {
-                if (isMuted || chatMode) return;
-                const newSpeech = event.results[event.results.length - 1][0].transcript.trim();
-                transcriptElement.innerText = "You said: " + newSpeech;
-
-                if (newSpeech.toLowerCase().includes("hey jarvis")) {
-                    if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
-                    speak("Yes sir, I am ready. Ask your question.");
-                    return;
-                }
-
-                if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
-                lastQuestion = newSpeech;
-                proceedBtn.style.display = "inline-block";
-            };
-
-            recognition.onerror = (event) => {
-                console.error("Recognition error:", event.error);
-                statusElement.innerText = "Error: " + event.error;
-            };
-
-            recognition.onend = () => {
-                if (!isMuted && !chatMode) recognition.start();
-            };
-
-            recognition.start();
-        }
-
-        proceedBtn.addEventListener("click", async () => {
-            proceedBtn.style.display = "none";
-            statusElement.innerText = "Searching...";
-            if (!chatMode) speak("Searching from the web...", async () => {
-                const answer = await queryDeepSeek(lastQuestion);
-                statusElement.innerText = "Loading your answer...";
-                speak("Loading your answer...", () => {
-                    speak(answer, () => {
-                        transcriptElement.innerHTML = "<b>Jarvis:</b> " + answer;
-                        lastQuestion = "";
-                    });
-                });
-            });
-            else {
-                const answer = await queryDeepSeek(lastQuestion);
-                transcriptElement.innerHTML = "<b>Jarvis:</b> " + answer;
-                statusElement.innerText = "Answer ready.";
-            }
-        });
-
-        startBtn.addEventListener("click", async () => {
-            try {
-                statusElement.innerText = "Requesting microphone access...";
-                await navigator.mediaDevices.getUserMedia({ audio: true });
-                statusElement.innerText = "Jarvis is listening.";
-                startBtn.style.display = "none";
-                if (!chatMode && !isMuted) startRecognition();
-            } catch (err) {
-                console.error("Mic access denied:", err);
-                statusElement.innerText = "Microphone access denied.";
-            }
-        });
-
-        muteToggle.addEventListener("click", () => {
-            isMuted = !isMuted;
-            muteToggle.textContent = isMuted ? "🔈 Unmute" : "🔇 Mute";
-            statusElement.innerText = isMuted ? "Jarvis muted and stopped listening." : "Jarvis active.";
-            if (isMuted && recognition) recognition.stop();
-            if (!isMuted && !chatMode) startRecognition();
-        });
-
-        chatToggle.addEventListener("click", () => {
-            chatMode = !chatMode;
-            chatToggle.textContent = chatMode ? "💬 Chat Mode: On" : "💬 Chat Mode: Off";
-            statusElement.innerText = chatMode ? "Chat mode activated (no voice)." : "Voice mode activated.";
-            if (chatMode && recognition) recognition.stop();
-            if (!chatMode && !isMuted) startRecognition();
-        });
-
-        window.onload = () => {
-            speak("Jarvis initialized and ready.");
-        };
-    </script>
+  // small helper
+  function escapeHtml(s){
+    if(!s) return '';
+    return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  }
+})();
+</script>
 </body>
 </html>
