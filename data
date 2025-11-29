@@ -1,2 +1,2 @@
-api = 
-model = 
+api = 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
+model = google/gemma-3n-e2b-it:free
